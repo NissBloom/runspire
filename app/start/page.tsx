@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -17,7 +17,6 @@ export default function GetStartedPage() {
   const router = useRouter()
   const [step, setStep] = useState(1)
   const [planId, setPlanId] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -30,7 +29,7 @@ export default function GetStartedPage() {
     personalBest: "",
   })
 
-  const handleNext = async () => {
+  const handleNext = () => {
     if (step === 3) {
       // Validate required fields on client side first
       if (!formData.firstName.trim() || !formData.lastName.trim() || !formData.email.trim()) {
@@ -38,37 +37,42 @@ export default function GetStartedPage() {
         return
       }
 
-      setIsLoading(true)
-
-      try {
-        // Save data to database when moving to step 4
-        const formDataObj = new FormData()
-        Object.entries(formData).forEach(([key, value]) => {
-          formDataObj.append(key, value.toString())
-        })
-
-        console.log("Submitting form data:", formData)
-
-        const result = await saveInitialPlanData(formDataObj)
-
-        console.log("Server response:", result)
-
-        if (result.success) {
-          setPlanId(result.planId)
-          setStep(step + 1)
-        } else {
-          alert(result.message || "Error saving data. Please try again.")
-        }
-      } catch (error) {
-        console.error("Client error:", error)
-        alert("There was an error processing your request. Please try again.")
-      } finally {
-        setIsLoading(false)
-      }
+      // Move to next step immediately
+      setStep(step + 1)
     } else {
       setStep(step + 1)
     }
   }
+
+  // Save data behind the scenes when reaching step 4
+  useEffect(() => {
+    if (step === 4 && !planId) {
+      const saveData = async () => {
+        try {
+          const formDataObj = new FormData()
+          Object.entries(formData).forEach(([key, value]) => {
+            formDataObj.append(key, value.toString())
+          })
+
+          console.log("Saving form data in background:", formData)
+
+          const result = await saveInitialPlanData(formDataObj)
+
+          console.log("Background save result:", result)
+
+          if (result.success) {
+            setPlanId(result.planId)
+          } else {
+            console.error("Failed to save data:", result.message)
+          }
+        } catch (error) {
+          console.error("Background save error:", error)
+        }
+      }
+
+      saveData()
+    }
+  }, [step, planId, formData])
 
   const handleBack = () => {
     setStep(step - 1)
@@ -407,20 +411,14 @@ export default function GetStartedPage() {
 
               <div className="mt-8 flex justify-between">
                 {step > 1 ? (
-                  <Button variant="outline" onClick={handleBack} disabled={isLoading}>
+                  <Button variant="outline" onClick={handleBack}>
                     Back
                   </Button>
                 ) : (
                   <div></div>
                 )}
 
-                {step < 4 ? (
-                  <Button onClick={handleNext} disabled={isLoading}>
-                    {isLoading ? "Saving..." : "Continue"}
-                  </Button>
-                ) : (
-                  <div></div>
-                )}
+                {step < 4 ? <Button onClick={handleNext}>Continue</Button> : <div></div>}
               </div>
             </CardContent>
           </Card>

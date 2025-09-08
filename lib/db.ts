@@ -48,8 +48,23 @@ export async function createTestimonialsTable() {
 
 export async function createTrainingPlansTable() {
   try {
+    // First check if the table exists and what columns it has
+    const tableInfo = await sql`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = 'training_plans' AND table_schema = 'public';
+    `
+
+    console.log(
+      "Existing training_plans columns:",
+      tableInfo.rows.map((row) => row.column_name),
+    )
+
+    // Drop and recreate the table to ensure correct schema
+    await sql`DROP TABLE IF EXISTS training_plans CASCADE;`
+
     await sql`
-      CREATE TABLE IF NOT EXISTS training_plans (
+      CREATE TABLE training_plans (
         id SERIAL PRIMARY KEY,
         user_id INTEGER REFERENCES trainees(id) ON DELETE CASCADE,
         goal TEXT NOT NULL,
@@ -63,7 +78,7 @@ export async function createTrainingPlansTable() {
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
     `
-    console.log("Created training_plans table")
+    console.log("Created training_plans table with correct schema")
     return { success: true }
   } catch (error) {
     console.error("Error creating training_plans table:", error)

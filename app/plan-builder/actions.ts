@@ -6,7 +6,7 @@ import { createOrGetUser, createTraineesTable, createTrainingPlansTable } from "
 
 export async function saveTrainingPlan(formData: FormData) {
   try {
-    // Ensure tables exist
+    // Ensure tables exist with correct schema
     await createTraineesTable()
     await createTrainingPlansTable()
 
@@ -126,7 +126,7 @@ export async function saveInitialPlanData(formData: FormData) {
   try {
     console.log("saveInitialPlanData - Starting...")
 
-    // Ensure tables exist first
+    // Ensure tables exist with correct schema - this will recreate training_plans if needed
     const traineesResult = await createTraineesTable()
     const plansResult = await createTrainingPlansTable()
 
@@ -197,6 +197,15 @@ export async function saveInitialPlanData(formData: FormData) {
     }
 
     console.log("saveInitialPlanData - User result:", userResult)
+
+    // Verify the training_plans table structure before inserting
+    const tableStructure = await sql`
+      SELECT column_name, data_type 
+      FROM information_schema.columns 
+      WHERE table_name = 'training_plans' AND table_schema = 'public'
+      ORDER BY ordinal_position;
+    `
+    console.log("saveInitialPlanData - Table structure:", tableStructure.rows)
 
     // Insert training plan
     console.log("saveInitialPlanData - Inserting training plan...")
