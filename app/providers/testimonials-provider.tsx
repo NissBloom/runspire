@@ -52,7 +52,7 @@ export function TestimonialsProvider({ children }: { children: React.ReactNode }
   useEffect(() => {
     async function initializeTestimonials() {
       try {
-        // First seed default testimonials if needed
+        // Just ensure table exists, don't seed default testimonials
         await seedDefaultTestimonials()
         // Then load testimonials
         await refreshTestimonials()

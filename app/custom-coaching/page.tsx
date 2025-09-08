@@ -194,14 +194,14 @@ export default function CustomCoachingPage() {
                     <div className="grid gap-4 md:grid-cols-2">
                       <div className="space-y-2">
                         <label htmlFor="firstName" className="text-sm font-medium">
-                          First Name
+                          First Name *
                         </label>
                         <Input id="firstName" value={formData.firstName} onChange={handleChange} required />
                       </div>
 
                       <div className="space-y-2">
                         <label htmlFor="lastName" className="text-sm font-medium">
-                          Last Name
+                          Last Name *
                         </label>
                         <Input id="lastName" value={formData.lastName} onChange={handleChange} required />
                       </div>
@@ -209,14 +209,14 @@ export default function CustomCoachingPage() {
 
                     <div className="space-y-2">
                       <label htmlFor="email" className="text-sm font-medium">
-                        Email
+                        Email *
                       </label>
                       <Input id="email" type="email" value={formData.email} onChange={handleChange} required />
                     </div>
 
                     <div className="space-y-2">
                       <label htmlFor="package" className="text-sm font-medium">
-                        Coaching Package
+                        Coaching Package *
                       </label>
                       <Select value={formData.package} onValueChange={(value) => handleSelectChange("package", value)}>
                         <SelectTrigger>
@@ -231,7 +231,7 @@ export default function CustomCoachingPage() {
 
                     <div className="space-y-2">
                       <label htmlFor="goal" className="text-sm font-medium">
-                        Your Running Goal
+                        Your Running Goal *
                       </label>
                       <Select onValueChange={(value) => handleSelectChange("goal", value)}>
                         <SelectTrigger>
@@ -250,7 +250,7 @@ export default function CustomCoachingPage() {
 
                     <div className="space-y-2">
                       <label htmlFor="experience" className="text-sm font-medium">
-                        Running Experience
+                        Running Experience *
                       </label>
                       <Textarea
                         id="experience"

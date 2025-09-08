@@ -2,70 +2,18 @@
 
 import { sql } from "@vercel/postgres"
 import { revalidatePath } from "next/cache"
-import { v4 as uuidv4 } from "uuid"
-
-export async function createTestimonialsTable() {
-  try {
-    // First, create the table if it doesn't exist
-    await sql`
-      CREATE TABLE IF NOT EXISTS testimonials (
-        id TEXT PRIMARY KEY,
-        first_name VARCHAR(255) NOT NULL,
-        last_name VARCHAR(255) NOT NULL,
-        achievement VARCHAR(255) NOT NULL,
-        comment TEXT NOT NULL,
-        rating INTEGER NOT NULL,
-        image_url TEXT,
-        status VARCHAR(50) DEFAULT 'pending',
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-      );
-    `
-
-    // Check if improvement_feedback column exists, and add it if it doesn't
-    try {
-      await sql`
-        ALTER TABLE testimonials 
-        ADD COLUMN IF NOT EXISTS improvement_feedback TEXT;
-      `
-      console.log("Added improvement_feedback column to testimonials table")
-    } catch (columnError) {
-      if (!columnError.message.includes("already exists")) {
-        throw columnError
-      }
-      console.log("improvement_feedback column already exists")
-    }
-
-    // Check if email column exists, and add it if it doesn't
-    try {
-      await sql`
-        ALTER TABLE testimonials 
-        ADD COLUMN IF NOT EXISTS email TEXT;
-      `
-      console.log("Added email column to testimonials table")
-    } catch (columnError) {
-      if (!columnError.message.includes("already exists")) {
-        throw columnError
-      }
-      console.log("email column already exists")
-    }
-
-    console.log("Created/updated testimonials table successfully")
-    return { success: true }
-  } catch (error) {
-    console.error("Error creating/updating testimonials table:", error)
-    return { success: false, error }
-  }
-}
+import { createOrGetUser, createTraineesTable, createTestimonialsTable } from "@/lib/db"
 
 export async function submitTestimonial(formData: FormData) {
   try {
-    // Ensure the table exists with the required columns
+    // Ensure tables exist
+    await createTraineesTable()
     await createTestimonialsTable()
 
     // Extract form data
     const firstName = formData.get("firstName") as string
     const lastName = formData.get("lastName") as string
-    const email = formData.get("email") as string // Add email field
+    const email = formData.get("email") as string
     const achievement = formData.get("achievement") as string
     const comment = formData.get("comment") as string
     const rating = Number.parseInt(formData.get("rating") as string)
@@ -80,16 +28,19 @@ export async function submitTestimonial(formData: FormData) {
       }
     }
 
-    // Generate a unique ID for the testimonial
-    const testimonialId = uuidv4()
+    // Create or get user
+    const userResult = await createOrGetUser(firstName, lastName, email || "")
+    if (!userResult.success) {
+      return {
+        success: false,
+        message: "Error creating user account.",
+      }
+    }
 
-    // Insert data into Vercel Postgres
-    await sql`
+    // Insert testimonial
+    const result = await sql`
       INSERT INTO testimonials (
-        id,
-        first_name,
-        last_name,
-        email,
+        user_id,
         achievement,
         comment,
         rating,
@@ -97,19 +48,19 @@ export async function submitTestimonial(formData: FormData) {
         improvement_feedback
       ) 
       VALUES (
-        ${testimonialId},
-        ${firstName},
-        ${lastName},
-        ${email},
+        ${userResult.userId},
         ${achievement},
         ${comment},
         ${rating},
         ${imageUrl},
         ${improvementFeedback}
       )
+      RETURNING id
     `
 
-    console.log("Successfully submitted testimonial")
+    const testimonialId = result.rows[0].id
+
+    console.log("Successfully submitted testimonial with ID:", testimonialId, "for user:", userResult.userId)
 
     // Revalidate the page to show fresh data
     revalidatePath("/testimonials")
@@ -141,24 +92,39 @@ export async function submitTestimonial(formData: FormData) {
 
 export async function getApprovedTestimonials(userEmail?: string) {
   try {
-    // If user email is provided, include their pending testimonials too
+    // Ensure tables exist first
+    await createTraineesTable()
+    await createTestimonialsTable()
+
     if (userEmail) {
-      const result = await sql`
-        SELECT * FROM testimonials 
-        WHERE (status = 'approved' AND rating > 3)
-           OR (email = ${userEmail} AND status = 'pending')
-        ORDER BY created_at DESC
+      // Get user ID first
+      const userResult = await sql`
+        SELECT id FROM trainees WHERE email = ${userEmail}
       `
-      return result.rows
-    } else {
-      // Otherwise just get approved testimonials
-      const result = await sql`
-        SELECT * FROM testimonials 
-        WHERE status = 'approved' AND rating > 3
-        ORDER BY created_at DESC
-      `
-      return result.rows
+
+      if (userResult.rows.length > 0) {
+        const userId = userResult.rows[0].id
+        const result = await sql`
+          SELECT t.*, tr.first_name, tr.last_name, tr.email
+          FROM testimonials t
+          JOIN trainees tr ON t.user_id = tr.id
+          WHERE (t.status = 'approved' AND t.rating > 3)
+             OR (t.user_id = ${userId} AND t.status = 'pending')
+          ORDER BY t.created_at DESC
+        `
+        return result.rows
+      }
     }
+
+    // Otherwise just get approved testimonials
+    const result = await sql`
+      SELECT t.*, tr.first_name, tr.last_name, tr.email
+      FROM testimonials t
+      JOIN trainees tr ON t.user_id = tr.id
+      WHERE t.status = 'approved' AND t.rating > 3
+      ORDER BY t.created_at DESC
+    `
+    return result.rows
   } catch (error) {
     console.error("Error fetching testimonials:", error)
     return []
@@ -167,9 +133,15 @@ export async function getApprovedTestimonials(userEmail?: string) {
 
 export async function getAllTestimonials() {
   try {
+    // Ensure tables exist first
+    await createTraineesTable()
+    await createTestimonialsTable()
+
     const result = await sql`
-      SELECT * FROM testimonials 
-      ORDER BY created_at DESC
+      SELECT t.*, tr.first_name, tr.last_name, tr.email
+      FROM testimonials t
+      JOIN trainees tr ON t.user_id = tr.id
+      ORDER BY t.created_at DESC
     `
     return result.rows
   } catch (error) {

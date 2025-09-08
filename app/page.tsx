@@ -1,14 +1,6 @@
 import Link from "next/link"
 import { BookOpen, Star, Calendar, Users, Award, ChevronRight, CheckCircle } from "lucide-react"
-import { seedDefaultTestimonials } from "./testimonials/seed"
 import { Button } from "@/components/ui/button"
-
-// This function will be called during server-side rendering
-export async function generateMetadata() {
-  // Seed testimonials during server-side rendering
-  await seedDefaultTestimonials()
-  return {}
-}
 
 export default function Home() {
   return (

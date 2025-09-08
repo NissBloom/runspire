@@ -11,12 +11,15 @@ import { Slider } from "@/components/ui/slider"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ChevronLeft, Calendar, Clock, Zap, MessageCircle } from "lucide-react"
+import { saveInitialPlanData, updatePlanCta } from "@/app/plan-builder/actions"
 
 export default function GetStartedPage() {
   const router = useRouter()
   const [step, setStep] = useState(1)
+  const [planId, setPlanId] = useState("")
   const [formData, setFormData] = useState({
-    name: "",
+    firstName: "",
+    lastName: "",
     email: "",
     goal: "5k",
     experience: "beginner",
@@ -26,8 +29,24 @@ export default function GetStartedPage() {
     personalBest: "",
   })
 
-  const handleNext = () => {
-    setStep(step + 1)
+  const handleNext = async () => {
+    if (step === 3) {
+      // Save data to database when moving to step 4
+      const formDataObj = new FormData()
+      Object.entries(formData).forEach(([key, value]) => {
+        formDataObj.append(key, value.toString())
+      })
+
+      const result = await saveInitialPlanData(formDataObj)
+      if (result.success) {
+        setPlanId(result.planId)
+        setStep(step + 1)
+      } else {
+        alert(result.message || "Error saving data. Please try again.")
+      }
+    } else {
+      setStep(step + 1)
+    }
   }
 
   const handleBack = () => {
@@ -48,6 +67,20 @@ export default function GetStartedPage() {
 
   const handleSelectChange = (field, value) => {
     setFormData({ ...formData, [field]: value })
+  }
+
+  const handleCtaClick = async (ctaType: string, url?: string) => {
+    if (planId) {
+      await updatePlanCta(planId, ctaType)
+    }
+
+    if (url) {
+      if (url.startsWith("http")) {
+        window.open(url, "_blank")
+      } else {
+        router.push(url)
+      }
+    }
   }
 
   const isIntermediateOrAdvanced = formData.experience === "intermediate" || formData.experience === "advanced"
@@ -219,20 +252,34 @@ export default function GetStartedPage() {
 
                   <div className="pt-4 border-t">
                     <div className="space-y-4">
-                      <div>
-                        <Label htmlFor="name">Your Name</Label>
-                        <Input
-                          id="name"
-                          placeholder="Enter your name"
-                          value={formData.name}
-                          onChange={(e) => handleInputChange("name", e.target.value)}
-                          className="mt-1"
-                          required
-                        />
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <div>
+                          <Label htmlFor="firstName">First Name *</Label>
+                          <Input
+                            id="firstName"
+                            placeholder="Enter your first name"
+                            value={formData.firstName}
+                            onChange={(e) => handleInputChange("firstName", e.target.value)}
+                            className="mt-1"
+                            required
+                          />
+                        </div>
+
+                        <div>
+                          <Label htmlFor="lastName">Last Name *</Label>
+                          <Input
+                            id="lastName"
+                            placeholder="Enter your last name"
+                            value={formData.lastName}
+                            onChange={(e) => handleInputChange("lastName", e.target.value)}
+                            className="mt-1"
+                            required
+                          />
+                        </div>
                       </div>
 
                       <div>
-                        <Label htmlFor="email">Email Address</Label>
+                        <Label htmlFor="email">Email Address *</Label>
                         <Input
                           id="email"
                           type="email"
@@ -261,7 +308,7 @@ export default function GetStartedPage() {
                           : formData.goal === "half"
                             ? "Half Marathon"
                             : "Marathon"}{" "}
-                      Training Plan for {formData.name || "You"}
+                      Training Plan for {formData.firstName} {formData.lastName}
                     </h3>
 
                     <div className="mb-6 grid gap-3">
@@ -309,28 +356,29 @@ export default function GetStartedPage() {
                     </p>
 
                     <div className="space-y-3">
-                      <Link href="/book">
-                        <Button className="w-full" size="lg">
-                          <Calendar className="mr-2 h-5 w-5" />
-                          Book Free 20-min Consult to Finalize Plan
-                        </Button>
-                      </Link>
+                      <Button className="w-full" size="lg" onClick={() => handleCtaClick("book_consult", "/book")}>
+                        <Calendar className="mr-2 h-5 w-5" />
+                        Book Free 20-min Consult to Finalize Plan
+                      </Button>
 
-                      <Button variant="outline" className="w-full bg-transparent" size="lg">
+                      <Button
+                        variant="outline"
+                        className="w-full bg-transparent"
+                        size="lg"
+                        onClick={() => handleCtaClick("request_plan_pay_later")}
+                      >
                         Request Plan and Pay Later (₪150)
                       </Button>
 
-                      <a
-                        href="https://wa.me/972586690059?text=Hi%20there!"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="block"
+                      <Button
+                        variant="outline"
+                        className="w-full bg-transparent"
+                        size="lg"
+                        onClick={() => handleCtaClick("whatsapp", "https://wa.me/972586690059?text=Hi%20there!")}
                       >
-                        <Button variant="outline" className="w-full bg-transparent" size="lg">
-                          <MessageCircle className="mr-2 h-5 w-5" />
-                          Contact via WhatsApp
-                        </Button>
-                      </a>
+                        <MessageCircle className="mr-2 h-5 w-5" />
+                        Contact via WhatsApp
+                      </Button>
                     </div>
                   </div>
                 </div>

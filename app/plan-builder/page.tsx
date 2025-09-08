@@ -27,7 +27,8 @@ export default function PlanBuilderPage() {
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
-    name: "",
+    firstName: "",
+    lastName: "",
     email: "",
     goal: "5k",
     experience: "beginner",
@@ -75,8 +76,9 @@ export default function PlanBuilderPage() {
         formDataObj.append(key, value.toString())
       })
 
-      // Add the selected bundle
+      // Add the selected bundle and CTA
       formDataObj.append("bundle", selectedBundle)
+      formDataObj.append("cta", "request_plan")
 
       // Submit the form
       const result = await saveTrainingPlan(formDataObj)
@@ -266,20 +268,34 @@ export default function PlanBuilderPage() {
 
                   <div className="pt-4 border-t">
                     <div className="space-y-4">
-                      <div>
-                        <Label htmlFor="name">Your Name</Label>
-                        <Input
-                          id="name"
-                          placeholder="Enter your name"
-                          value={formData.name}
-                          onChange={(e) => handleInputChange("name", e.target.value)}
-                          className="mt-1"
-                          required
-                        />
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <div>
+                          <Label htmlFor="firstName">First Name *</Label>
+                          <Input
+                            id="firstName"
+                            placeholder="Enter your first name"
+                            value={formData.firstName}
+                            onChange={(e) => handleInputChange("firstName", e.target.value)}
+                            className="mt-1"
+                            required
+                          />
+                        </div>
+
+                        <div>
+                          <Label htmlFor="lastName">Last Name *</Label>
+                          <Input
+                            id="lastName"
+                            placeholder="Enter your last name"
+                            value={formData.lastName}
+                            onChange={(e) => handleInputChange("lastName", e.target.value)}
+                            className="mt-1"
+                            required
+                          />
+                        </div>
                       </div>
 
                       <div>
-                        <Label htmlFor="email">Email Address</Label>
+                        <Label htmlFor="email">Email Address *</Label>
                         <Input
                           id="email"
                           type="email"

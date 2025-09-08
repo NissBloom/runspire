@@ -2,42 +2,17 @@
 
 import { sql } from "@vercel/postgres"
 import { revalidatePath } from "next/cache"
-import { v4 as uuidv4 } from "uuid"
-import { addBundleColumnToTrainingPlans } from "@/lib/db"
-
-export async function createTrainingPlanTableInDB() {
-  try {
-    await sql`
-      CREATE TABLE IF NOT EXISTS training_plans (
-        id TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
-        email TEXT NOT NULL,
-        goal TEXT NOT NULL,
-        experience TEXT NOT NULL,
-        days_per_week INTEGER NOT NULL,
-        current_mileage INTEGER NOT NULL,
-        race_distance TEXT,
-        personal_best TEXT,
-        bundle TEXT,
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-      );
-    `
-    console.log("Training plans table created successfully")
-    return { success: true }
-  } catch (error) {
-    console.error("Error creating training plans table:", error)
-    return { success: false, error }
-  }
-}
+import { createOrGetUser, createTraineesTable, createTrainingPlansTable } from "@/lib/db"
 
 export async function saveTrainingPlan(formData: FormData) {
   try {
-    // Ensure the table exists with the bundle column
-    await createTrainingPlanTableInDB()
-    await addBundleColumnToTrainingPlans()
+    // Ensure tables exist
+    await createTraineesTable()
+    await createTrainingPlansTable()
 
     // Extract form data
-    const name = formData.get("name") as string
+    const firstName = formData.get("firstName") as string
+    const lastName = formData.get("lastName") as string
     const email = formData.get("email") as string
     const goal = formData.get("goal") as string
     const experience = formData.get("experience") as string
@@ -46,47 +21,55 @@ export async function saveTrainingPlan(formData: FormData) {
     const raceDistance = (formData.get("raceDistance") as string) || null
     const personalBest = (formData.get("personalBest") as string) || null
     const bundle = (formData.get("bundle") as string) || "basic"
+    const cta = (formData.get("cta") as string) || null
 
     // Validate required fields
-    if (!name || !email || !goal || !experience || isNaN(daysPerWeek) || isNaN(currentMileage)) {
+    if (!firstName || !lastName || !email || !goal || !experience || isNaN(daysPerWeek) || isNaN(currentMileage)) {
       return {
         success: false,
         message: "Please fill in all required fields.",
       }
     }
 
-    // Generate a unique ID for the plan
-    const planId = uuidv4()
+    // Create or get user
+    const userResult = await createOrGetUser(firstName, lastName, email)
+    if (!userResult.success) {
+      return {
+        success: false,
+        message: "Error creating user account.",
+      }
+    }
 
-    // Insert data into Vercel Postgres
-    await sql`
+    // Insert training plan
+    const result = await sql`
       INSERT INTO training_plans (
-        id,
-        name,
-        email,
+        user_id,
         goal,
         experience,
         days_per_week,
         current_mileage,
         race_distance,
         personal_best,
-        bundle
+        bundle,
+        cta
       ) 
       VALUES (
-        ${planId},
-        ${name},
-        ${email},
+        ${userResult.userId},
         ${goal},
         ${experience},
         ${daysPerWeek},
         ${currentMileage},
         ${raceDistance},
         ${personalBest},
-        ${bundle}
+        ${bundle},
+        ${cta}
       )
+      RETURNING id
     `
 
-    console.log("Successfully saved training plan")
+    const planId = result.rows[0].id
+
+    console.log("Successfully saved training plan with ID:", planId, "for user:", userResult.userId)
 
     // Revalidate the page to show fresh data
     revalidatePath("/plan-builder")
@@ -94,7 +77,7 @@ export async function saveTrainingPlan(formData: FormData) {
     return {
       success: true,
       message: "Your training plan has been saved successfully!",
-      planId,
+      planId: planId.toString(),
     }
   } catch (error) {
     console.error("Error saving training plan:", error)
@@ -108,7 +91,10 @@ export async function saveTrainingPlan(formData: FormData) {
 export async function getTrainingPlan(planId: string) {
   try {
     const result = await sql`
-      SELECT * FROM training_plans WHERE id = ${planId}
+      SELECT tp.*, t.first_name, t.last_name, t.email
+      FROM training_plans tp
+      JOIN trainees t ON tp.user_id = t.id
+      WHERE tp.id = ${planId}
     `
 
     if (result.rows.length === 0) {
@@ -119,5 +105,102 @@ export async function getTrainingPlan(planId: string) {
   } catch (error) {
     console.error("Error fetching training plan:", error)
     return { success: false, message: "Error fetching plan" }
+  }
+}
+
+// New action to save initial plan data when user hits continue
+export async function saveInitialPlanData(formData: FormData) {
+  try {
+    // Ensure tables exist
+    await createTraineesTable()
+    await createTrainingPlansTable()
+
+    // Extract form data
+    const firstName = formData.get("firstName") as string
+    const lastName = formData.get("lastName") as string
+    const email = formData.get("email") as string
+    const goal = formData.get("goal") as string
+    const experience = formData.get("experience") as string
+    const daysPerWeek = Number.parseInt(formData.get("daysPerWeek") as string)
+    const currentMileage = Number.parseInt(formData.get("currentMileage") as string)
+    const raceDistance = (formData.get("raceDistance") as string) || null
+    const personalBest = (formData.get("personalBest") as string) || null
+
+    // Validate required fields
+    if (!firstName || !lastName || !email || !goal || !experience || isNaN(daysPerWeek) || isNaN(currentMileage)) {
+      return {
+        success: false,
+        message: "Please fill in all required fields.",
+      }
+    }
+
+    // Create or get user
+    const userResult = await createOrGetUser(firstName, lastName, email)
+    if (!userResult.success) {
+      return {
+        success: false,
+        message: "Error creating user account.",
+      }
+    }
+
+    // Insert training plan
+    const result = await sql`
+      INSERT INTO training_plans (
+        user_id,
+        goal,
+        experience,
+        days_per_week,
+        current_mileage,
+        race_distance,
+        personal_best
+      ) 
+      VALUES (
+        ${userResult.userId},
+        ${goal},
+        ${experience},
+        ${daysPerWeek},
+        ${currentMileage},
+        ${raceDistance},
+        ${personalBest}
+      )
+      RETURNING id
+    `
+
+    const planId = result.rows[0].id
+
+    console.log("Successfully saved initial training plan data with ID:", planId, "for user:", userResult.userId)
+
+    return {
+      success: true,
+      planId: planId.toString(),
+    }
+  } catch (error) {
+    console.error("Error saving initial training plan data:", error)
+    return {
+      success: false,
+      message: "There was an error saving your plan data. Please try again.",
+    }
+  }
+}
+
+// Action to update CTA when user clicks a button
+export async function updatePlanCta(planId: string, cta: string) {
+  try {
+    await sql`
+      UPDATE training_plans 
+      SET cta = ${cta}
+      WHERE id = ${planId}
+    `
+
+    console.log("Successfully updated CTA for plan ID:", planId, "with CTA:", cta)
+
+    return {
+      success: true,
+    }
+  } catch (error) {
+    console.error("Error updating plan CTA:", error)
+    return {
+      success: false,
+    }
   }
 }
