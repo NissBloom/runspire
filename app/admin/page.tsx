@@ -6,8 +6,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { Star } from "lucide-react"
-import { approveTestimonial, rejectTestimonial } from "./actions"
+import { approveTestimonial, rejectTestimonial, updateTestimonial } from "./actions"
 import { getPackageById } from "@/lib/data"
 
 export default function AdminPage() {
@@ -18,6 +20,13 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true)
   const [selectedTestimonial, setSelectedTestimonial] = useState(null)
   const [viewDialogOpen, setViewDialogOpen] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
+  const [editForm, setEditForm] = useState({
+    first_name: "",
+    last_name: "",
+    achievement: "",
+    comment: "",
+  })
 
   useEffect(() => {
     async function fetchData() {
@@ -53,7 +62,42 @@ export default function AdminPage() {
 
   const handleViewTestimonial = (testimonial) => {
     setSelectedTestimonial(testimonial)
+    setEditForm({
+      first_name: testimonial.first_name,
+      last_name: testimonial.last_name,
+      achievement: testimonial.achievement,
+      comment: testimonial.comment,
+    })
+    setIsEditing(false)
     setViewDialogOpen(true)
+  }
+
+  const handleEditTestimonial = () => {
+    setIsEditing(true)
+  }
+
+  const handleSaveEdit = async () => {
+    try {
+      const result = await updateTestimonial(selectedTestimonial.id, editForm)
+      if (result.success) {
+        // Update the testimonial in the local state
+        setTestimonials(testimonials.map((t) => (t.id === selectedTestimonial.id ? { ...t, ...editForm } : t)))
+        setSelectedTestimonial({ ...selectedTestimonial, ...editForm })
+        setIsEditing(false)
+      }
+    } catch (error) {
+      console.error("Error updating testimonial:", error)
+    }
+  }
+
+  const handleCancelEdit = () => {
+    setEditForm({
+      first_name: selectedTestimonial.first_name,
+      last_name: selectedTestimonial.last_name,
+      achievement: selectedTestimonial.achievement,
+      comment: selectedTestimonial.comment,
+    })
+    setIsEditing(false)
   }
 
   const handleApproveTestimonial = async (id) => {
@@ -279,11 +323,11 @@ export default function AdminPage() {
         </TabsContent>
       </Tabs>
 
-      {/* Testimonial View Dialog */}
+      {/* Testimonial View/Edit Dialog */}
       <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Testimonial Details</DialogTitle>
+            <DialogTitle>{isEditing ? "Edit Testimonial" : "Testimonial Details"}</DialogTitle>
             <DialogDescription>
               Submitted on {selectedTestimonial && new Date(selectedTestimonial.created_at).toLocaleDateString()}
             </DialogDescription>
@@ -297,11 +341,38 @@ export default function AdminPage() {
                   alt={`${selectedTestimonial.first_name} ${selectedTestimonial.last_name}`}
                   className="h-16 w-16 rounded-full object-cover mr-4"
                 />
-                <div>
-                  <h3 className="font-bold">
-                    {selectedTestimonial.first_name} {selectedTestimonial.last_name}
-                  </h3>
-                  <p className="text-sm text-muted-foreground">{selectedTestimonial.achievement}</p>
+                <div className="flex-1">
+                  {isEditing ? (
+                    <div className="space-y-2">
+                      <div className="flex space-x-2">
+                        <Input
+                          value={editForm.first_name}
+                          onChange={(e) => setEditForm({ ...editForm, first_name: e.target.value })}
+                          placeholder="First Name"
+                          className="text-sm"
+                        />
+                        <Input
+                          value={editForm.last_name}
+                          onChange={(e) => setEditForm({ ...editForm, last_name: e.target.value })}
+                          placeholder="Last Name"
+                          className="text-sm"
+                        />
+                      </div>
+                      <Input
+                        value={editForm.achievement}
+                        onChange={(e) => setEditForm({ ...editForm, achievement: e.target.value })}
+                        placeholder="Achievement/Subtitle"
+                        className="text-sm"
+                      />
+                    </div>
+                  ) : (
+                    <>
+                      <h3 className="font-bold">
+                        {selectedTestimonial.first_name} {selectedTestimonial.last_name}
+                      </h3>
+                      <p className="text-sm text-muted-foreground">{selectedTestimonial.achievement}</p>
+                    </>
+                  )}
                   <div className="flex mt-1">
                     {[...Array(selectedTestimonial.rating)].map((_, i) => (
                       <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
@@ -310,11 +381,21 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              <blockquote className="border-l-4 border-yellow-300 pl-4 italic">
-                "{selectedTestimonial.comment}"
-              </blockquote>
+              {isEditing ? (
+                <Textarea
+                  value={editForm.comment}
+                  onChange={(e) => setEditForm({ ...editForm, comment: e.target.value })}
+                  placeholder="Testimonial description"
+                  rows={4}
+                  className="w-full"
+                />
+              ) : (
+                <blockquote className="border-l-4 border-yellow-300 pl-4 italic">
+                  "{selectedTestimonial.comment}"
+                </blockquote>
+              )}
 
-              {selectedTestimonial.improvement_feedback && (
+              {selectedTestimonial.improvement_feedback && !isEditing && (
                 <div className="mt-4 p-3 bg-gray-50 rounded-md">
                   <h4 className="text-sm font-semibold text-gray-700">Improvement Feedback:</h4>
                   <p className="text-sm text-gray-600">{selectedTestimonial.improvement_feedback}</p>
@@ -322,29 +403,50 @@ export default function AdminPage() {
               )}
 
               <div className="flex justify-end space-x-2 pt-4">
-                {selectedTestimonial.status !== "approved" && (
-                  <Button
-                    variant="outline"
-                    className="text-green-600 border-green-600 hover:bg-green-50"
-                    onClick={() => {
-                      handleApproveTestimonial(selectedTestimonial.id)
-                      setViewDialogOpen(false)
-                    }}
-                  >
-                    Approve
-                  </Button>
-                )}
-                {selectedTestimonial.status !== "rejected" && (
-                  <Button
-                    variant="outline"
-                    className="text-red-600 border-red-600 hover:bg-red-50"
-                    onClick={() => {
-                      handleRejectTestimonial(selectedTestimonial.id)
-                      setViewDialogOpen(false)
-                    }}
-                  >
-                    Reject
-                  </Button>
+                {isEditing ? (
+                  <>
+                    <Button variant="outline" onClick={handleCancelEdit}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleSaveEdit} className="bg-blue-600 hover:bg-blue-700 text-white">
+                      Save Changes
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    {/* Always show Edit button for all testimonials */}
+                    <Button
+                      variant="outline"
+                      onClick={handleEditTestimonial}
+                      className="text-blue-600 border-blue-600 hover:bg-blue-50 bg-transparent"
+                    >
+                      Edit
+                    </Button>
+                    {selectedTestimonial.status !== "approved" && (
+                      <Button
+                        variant="outline"
+                        className="text-green-600 border-green-600 hover:bg-green-50 bg-transparent"
+                        onClick={() => {
+                          handleApproveTestimonial(selectedTestimonial.id)
+                          setViewDialogOpen(false)
+                        }}
+                      >
+                        Approve
+                      </Button>
+                    )}
+                    {selectedTestimonial.status !== "rejected" && (
+                      <Button
+                        variant="outline"
+                        className="text-red-600 border-red-600 hover:bg-red-50 bg-transparent"
+                        onClick={() => {
+                          handleRejectTestimonial(selectedTestimonial.id)
+                          setViewDialogOpen(false)
+                        }}
+                      >
+                        Reject
+                      </Button>
+                    )}
+                  </>
                 )}
               </div>
             </div>

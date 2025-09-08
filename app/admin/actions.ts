@@ -37,3 +37,33 @@ export async function rejectTestimonial(id: string) {
     return { success: false, error }
   }
 }
+
+export async function updateTestimonial(
+  id: string,
+  data: {
+    first_name: string
+    last_name: string
+    achievement: string
+    comment: string
+  },
+) {
+  try {
+    await sql`
+      UPDATE testimonials 
+      SET 
+        first_name = ${data.first_name},
+        last_name = ${data.last_name},
+        achievement = ${data.achievement},
+        comment = ${data.comment}
+      WHERE id = ${id}
+    `
+
+    revalidatePath("/admin")
+    revalidatePath("/testimonials")
+
+    return { success: true }
+  } catch (error) {
+    console.error("Error updating testimonial:", error)
+    return { success: false, error }
+  }
+}
