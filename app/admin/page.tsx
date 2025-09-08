@@ -88,8 +88,20 @@ export default function AdminPage() {
             throw new Error(`HTTP error! status: ${testimonialsRes.status}`)
           }
           const testimonialsData = await testimonialsRes.json()
-          console.log("Testimonials data received:", testimonialsData)
-          setTestimonials(testimonialsData.testimonials || [])
+          console.log("Testimonials API response:", testimonialsData)
+
+          // Handle different response formats
+          let testimonialsArray = []
+          if (testimonialsData.testimonials) {
+            testimonialsArray = testimonialsData.testimonials
+          } else if (testimonialsData.data) {
+            testimonialsArray = testimonialsData.data
+          } else if (Array.isArray(testimonialsData)) {
+            testimonialsArray = testimonialsData
+          }
+
+          console.log("Setting testimonials:", testimonialsArray)
+          setTestimonials(testimonialsArray)
         } catch (testimonialError) {
           console.error("Error fetching testimonials:", testimonialError)
           setTestimonials([])
@@ -124,7 +136,7 @@ export default function AdminPage() {
     if (!selectedTestimonial) return
 
     try {
-      const result = await updateTestimonial(selectedTestimonial.id, editForm)
+      const result = await updateTestimonial(selectedTestimonial.id.toString(), editForm)
       if (result.success) {
         // Update the testimonial in the local state
         setTestimonials(testimonials.map((t) => (t.id === selectedTestimonial.id ? { ...t, ...editForm } : t)))
@@ -150,7 +162,7 @@ export default function AdminPage() {
 
   const handleApproveTestimonial = async (id: number) => {
     try {
-      const result = await approveTestimonial(id)
+      const result = await approveTestimonial(id.toString())
       if (result.success) {
         // Update the testimonial status in the local state
         setTestimonials(testimonials.map((t) => (t.id === id ? { ...t, status: "approved" } : t)))
@@ -162,7 +174,7 @@ export default function AdminPage() {
 
   const handleRejectTestimonial = async (id: number) => {
     try {
-      const result = await rejectTestimonial(id)
+      const result = await rejectTestimonial(id.toString())
       if (result.success) {
         // Update the testimonial status in the local state
         setTestimonials(testimonials.map((t) => (t.id === id ? { ...t, status: "rejected" } : t)))

@@ -2,183 +2,126 @@
 
 import { sql } from "@vercel/postgres"
 import { revalidatePath } from "next/cache"
-import { createOrGetUser, createTraineesTable, createTestimonialsTable } from "@/lib/db"
+import { createTestimonialsTable, createTraineesTable } from "@/lib/db"
 
-export async function submitTestimonial(formData: FormData) {
-  try {
-    // Ensure tables exist
-    await createTraineesTable()
-    await createTestimonialsTable()
-
-    // Extract form data
-    const firstName = formData.get("firstName") as string
-    const lastName = formData.get("lastName") as string
-    const email = formData.get("email") as string
-    const achievement = formData.get("achievement") as string
-    const comment = formData.get("comment") as string
-    const rating = Number.parseInt(formData.get("rating") as string)
-    const imageUrl = (formData.get("imageUrl") as string) || "/placeholder.svg?height=80&width=80"
-    const improvementFeedback = (formData.get("improvementFeedback") as string) || ""
-
-    // Validate required fields
-    if (!firstName || !lastName || !achievement || !comment || isNaN(rating)) {
-      return {
-        success: false,
-        message: "Please fill in all required fields.",
-      }
-    }
-
-    // Create or get user
-    const userResult = await createOrGetUser(firstName, lastName, email || "")
-    if (!userResult.success) {
-      return {
-        success: false,
-        message: "Error creating user account.",
-      }
-    }
-
-    // Insert testimonial
-    const result = await sql`
-      INSERT INTO testimonials (
-        user_id,
-        achievement,
-        comment,
-        rating,
-        image_url,
-        improvement_feedback
-      ) 
-      VALUES (
-        ${userResult.userId},
-        ${achievement},
-        ${comment},
-        ${rating},
-        ${imageUrl},
-        ${improvementFeedback}
-      )
-      RETURNING id
-    `
-
-    const testimonialId = result.rows[0].id
-
-    console.log("Successfully submitted testimonial with ID:", testimonialId, "for user:", userResult.userId)
-
-    // Revalidate the page to show fresh data
-    revalidatePath("/testimonials")
-
-    return {
-      success: true,
-      message: "Your testimonial has been submitted successfully!",
-      testimonial: {
-        id: testimonialId,
-        first_name: firstName,
-        last_name: lastName,
-        email: email,
-        achievement: achievement,
-        comment: comment,
-        rating: rating,
-        image_url: imageUrl,
-        status: "pending",
-        created_at: new Date().toISOString(),
-      },
-    }
-  } catch (error) {
-    console.error("Error submitting testimonial:", error)
-    return {
-      success: false,
-      message: "There was an error submitting your testimonial. Please try again.",
-    }
-  }
+export interface Testimonial {
+  id: number
+  first_name: string
+  last_name: string
+  achievement: string
+  comment: string
+  rating: number
+  status: string
+  created_at: string
+  user_id: number
 }
 
-export async function getApprovedTestimonials(userEmail?: string) {
+export async function getAllTestimonials(): Promise<Testimonial[]> {
   try {
-    // Ensure tables exist first
-    await createTraineesTable()
     await createTestimonialsTable()
+    await createTraineesTable()
 
-    if (userEmail) {
-      // Get user ID first
-      const userResult = await sql`
-        SELECT id FROM trainees WHERE email = ${userEmail}
-      `
-
-      if (userResult.rows.length > 0) {
-        const userId = userResult.rows[0].id
-        const result = await sql`
-          SELECT t.*, tr.first_name, tr.last_name, tr.email
-          FROM testimonials t
-          JOIN trainees tr ON t.user_id = tr.id
-          WHERE (t.status = 'approved' AND t.rating > 3)
-             OR (t.user_id = ${userId} AND t.status = 'pending')
-          ORDER BY t.created_at DESC
-        `
-        return result.rows
-      }
-    }
-
-    // Otherwise just get approved testimonials
     const result = await sql`
-      SELECT t.*, tr.first_name, tr.last_name, tr.email
+      SELECT 
+        t.id,
+        COALESCE(tr.first_name, 'Unknown') as first_name,
+        COALESCE(tr.last_name, 'User') as last_name,
+        t.achievement,
+        t.comment,
+        t.rating,
+        t.status,
+        t.created_at,
+        t.user_id
       FROM testimonials t
-      JOIN trainees tr ON t.user_id = tr.id
-      WHERE t.status = 'approved' AND t.rating > 3
+      LEFT JOIN trainees tr ON t.user_id = tr.id
       ORDER BY t.created_at DESC
     `
-    return result.rows
+
+    return result.rows as Testimonial[]
   } catch (error) {
     console.error("Error fetching testimonials:", error)
     return []
   }
 }
 
-export async function getAllTestimonials() {
+export async function getApprovedTestimonials(): Promise<Testimonial[]> {
   try {
-    // Ensure tables exist first
-    await createTraineesTable()
     await createTestimonialsTable()
+    await createTraineesTable()
 
-    // First try to get testimonials with user info via JOIN
     const result = await sql`
       SELECT 
         t.id,
-        t.user_id,
+        COALESCE(tr.first_name, 'Unknown') as first_name,
+        COALESCE(tr.last_name, 'User') as last_name,
         t.achievement,
         t.comment,
         t.rating,
-        t.image_url,
-        t.improvement_feedback,
         t.status,
         t.created_at,
-        COALESCE(tr.first_name, 'Unknown') as first_name,
-        COALESCE(tr.last_name, 'User') as last_name,
-        COALESCE(tr.email, '') as email
+        t.user_id
       FROM testimonials t
       LEFT JOIN trainees tr ON t.user_id = tr.id
+      WHERE t.status = 'approved'
       ORDER BY t.created_at DESC
     `
 
-    console.log(`Found ${result.rows.length} testimonials in database`)
-    return result.rows
+    return result.rows as Testimonial[]
   } catch (error) {
-    console.error("Error fetching testimonials:", error)
+    console.error("Error fetching approved testimonials:", error)
+    return []
+  }
+}
 
-    // Fallback: try to get testimonials without JOIN
-    try {
-      const fallbackResult = await sql`
-        SELECT * FROM testimonials ORDER BY created_at DESC
+export async function submitTestimonial(formData: FormData) {
+  try {
+    await createTestimonialsTable()
+    await createTraineesTable()
+
+    const firstName = formData.get("firstName") as string
+    const lastName = formData.get("lastName") as string
+    const email = formData.get("email") as string
+    const achievement = formData.get("achievement") as string
+    const comment = formData.get("comment") as string
+    const rating = Number.parseInt(formData.get("rating") as string)
+
+    // First, insert or get the trainee
+    const userResult = await sql`
+      SELECT id FROM trainees WHERE email = ${email}
+    `
+
+    let userId: number
+
+    if (userResult.rows.length === 0) {
+      // Create new trainee
+      const newUserResult = await sql`
+        INSERT INTO trainees (first_name, last_name, email, created_at)
+        VALUES (${firstName}, ${lastName}, ${email}, NOW())
+        RETURNING id
       `
-      console.log(`Fallback query found ${fallbackResult.rows.length} testimonials`)
-
-      // Add default user info for testimonials without user data
-      return fallbackResult.rows.map((testimonial) => ({
-        ...testimonial,
-        first_name: "Unknown",
-        last_name: "User",
-        email: "",
-      }))
-    } catch (fallbackError) {
-      console.error("Fallback query also failed:", fallbackError)
-      return []
+      userId = newUserResult.rows[0].id
+    } else {
+      userId = userResult.rows[0].id
+      // Update existing trainee info
+      await sql`
+        UPDATE trainees 
+        SET first_name = ${firstName}, last_name = ${lastName}
+        WHERE id = ${userId}
+      `
     }
+
+    // Insert the testimonial
+    await sql`
+      INSERT INTO testimonials (user_id, achievement, comment, rating, status, created_at)
+      VALUES (${userId}, ${achievement}, ${comment}, ${rating}, 'pending', NOW())
+    `
+
+    revalidatePath("/testimonials")
+    revalidatePath("/admin")
+
+    return { success: true, message: "Testimonial submitted successfully!" }
+  } catch (error) {
+    console.error("Error submitting testimonial:", error)
+    return { success: false, message: "Failed to submit testimonial. Please try again." }
   }
 }

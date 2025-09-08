@@ -2,79 +2,45 @@
 
 import { sql } from "@vercel/postgres"
 import { revalidatePath } from "next/cache"
-import { createTestimonialsTable, createTraineesTable } from "@/lib/db"
 
-export async function approveTestimonial(testimonialId: number) {
+export async function approveTestimonial(id: string) {
   try {
-    await createTestimonialsTable()
-
-    const result = await sql`
+    await sql`
       UPDATE testimonials 
       SET status = 'approved' 
-      WHERE id = ${testimonialId}
-      RETURNING id
+      WHERE id = ${id}
     `
-
-    if (result.rows.length === 0) {
-      return {
-        success: false,
-        message: "Testimonial not found",
-      }
-    }
 
     revalidatePath("/admin")
     revalidatePath("/testimonials")
 
-    return {
-      success: true,
-      message: "Testimonial approved successfully",
-    }
+    return { success: true }
   } catch (error) {
     console.error("Error approving testimonial:", error)
-    return {
-      success: false,
-      message: "Failed to approve testimonial",
-    }
+    return { success: false, error }
   }
 }
 
-export async function rejectTestimonial(testimonialId: number) {
+export async function rejectTestimonial(id: string) {
   try {
-    await createTestimonialsTable()
-
-    const result = await sql`
+    await sql`
       UPDATE testimonials 
       SET status = 'rejected' 
-      WHERE id = ${testimonialId}
-      RETURNING id
+      WHERE id = ${id}
     `
 
-    if (result.rows.length === 0) {
-      return {
-        success: false,
-        message: "Testimonial not found",
-      }
-    }
-
     revalidatePath("/admin")
-    revalidatePath("/testimonials")
 
-    return {
-      success: true,
-      message: "Testimonial rejected successfully",
-    }
+    return { success: true }
   } catch (error) {
     console.error("Error rejecting testimonial:", error)
-    return {
-      success: false,
-      message: "Failed to reject testimonial",
-    }
+    return { success: false, error }
   }
 }
 
 export async function updateTestimonial(
-  testimonialId: number,
-  updates: {
+  id: string,
+  data: {
     first_name: string
     last_name: string
     achievement: string
@@ -82,49 +48,30 @@ export async function updateTestimonial(
   },
 ) {
   try {
-    await createTestimonialsTable()
-    await createTraineesTable()
-
-    // First get the testimonial to find the user_id
-    const testimonialResult = await sql`
-      SELECT user_id FROM testimonials WHERE id = ${testimonialId}
-    `
-
-    if (testimonialResult.rows.length === 0) {
-      return {
-        success: false,
-        message: "Testimonial not found",
-      }
-    }
-
-    const userId = testimonialResult.rows[0].user_id
-
-    // Update the user information
-    await sql`
-      UPDATE trainees 
-      SET first_name = ${updates.first_name}, last_name = ${updates.last_name}
-      WHERE id = ${userId}
-    `
-
-    // Update the testimonial information
+    // Update testimonial content
     await sql`
       UPDATE testimonials 
-      SET achievement = ${updates.achievement}, comment = ${updates.comment}
-      WHERE id = ${testimonialId}
+      SET 
+        achievement = ${data.achievement},
+        comment = ${data.comment}
+      WHERE id = ${id}
+    `
+
+    // Update the associated trainee record
+    await sql`
+      UPDATE trainees 
+      SET 
+        first_name = ${data.first_name},
+        last_name = ${data.last_name}
+      WHERE id = (SELECT user_id FROM testimonials WHERE id = ${id})
     `
 
     revalidatePath("/admin")
     revalidatePath("/testimonials")
 
-    return {
-      success: true,
-      message: "Testimonial updated successfully",
-    }
+    return { success: true }
   } catch (error) {
     console.error("Error updating testimonial:", error)
-    return {
-      success: false,
-      message: "Failed to update testimonial",
-    }
+    return { success: false, error }
   }
 }
