@@ -17,6 +17,7 @@ export default function GetStartedPage() {
   const router = useRouter()
   const [step, setStep] = useState(1)
   const [planId, setPlanId] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -31,18 +32,38 @@ export default function GetStartedPage() {
 
   const handleNext = async () => {
     if (step === 3) {
-      // Save data to database when moving to step 4
-      const formDataObj = new FormData()
-      Object.entries(formData).forEach(([key, value]) => {
-        formDataObj.append(key, value.toString())
-      })
+      // Validate required fields on client side first
+      if (!formData.firstName.trim() || !formData.lastName.trim() || !formData.email.trim()) {
+        alert("Please fill in your First Name, Last Name, and Email Address.")
+        return
+      }
 
-      const result = await saveInitialPlanData(formDataObj)
-      if (result.success) {
-        setPlanId(result.planId)
-        setStep(step + 1)
-      } else {
-        alert(result.message || "Error saving data. Please try again.")
+      setIsLoading(true)
+
+      try {
+        // Save data to database when moving to step 4
+        const formDataObj = new FormData()
+        Object.entries(formData).forEach(([key, value]) => {
+          formDataObj.append(key, value.toString())
+        })
+
+        console.log("Submitting form data:", formData)
+
+        const result = await saveInitialPlanData(formDataObj)
+
+        console.log("Server response:", result)
+
+        if (result.success) {
+          setPlanId(result.planId)
+          setStep(step + 1)
+        } else {
+          alert(result.message || "Error saving data. Please try again.")
+        }
+      } catch (error) {
+        console.error("Client error:", error)
+        alert("There was an error processing your request. Please try again.")
+      } finally {
+        setIsLoading(false)
       }
     } else {
       setStep(step + 1)
@@ -386,14 +407,20 @@ export default function GetStartedPage() {
 
               <div className="mt-8 flex justify-between">
                 {step > 1 ? (
-                  <Button variant="outline" onClick={handleBack}>
+                  <Button variant="outline" onClick={handleBack} disabled={isLoading}>
                     Back
                   </Button>
                 ) : (
                   <div></div>
                 )}
 
-                {step < 4 ? <Button onClick={handleNext}>Continue</Button> : <div></div>}
+                {step < 4 ? (
+                  <Button onClick={handleNext} disabled={isLoading}>
+                    {isLoading ? "Saving..." : "Continue"}
+                  </Button>
+                ) : (
+                  <div></div>
+                )}
               </div>
             </CardContent>
           </Card>

@@ -23,8 +23,20 @@ export async function saveTrainingPlan(formData: FormData) {
     const bundle = (formData.get("bundle") as string) || "basic"
     const cta = (formData.get("cta") as string) || null
 
+    // Debug logging
+    console.log("saveTrainingPlan - Form data:", {
+      firstName,
+      lastName,
+      email,
+      goal,
+      experience,
+      daysPerWeek,
+      currentMileage,
+    })
+
     // Validate required fields
     if (!firstName || !lastName || !email || !goal || !experience || isNaN(daysPerWeek) || isNaN(currentMileage)) {
+      console.log("saveTrainingPlan - Validation failed")
       return {
         success: false,
         message: "Please fill in all required fields.",
@@ -34,6 +46,7 @@ export async function saveTrainingPlan(formData: FormData) {
     // Create or get user
     const userResult = await createOrGetUser(firstName, lastName, email)
     if (!userResult.success) {
+      console.log("saveTrainingPlan - User creation failed:", userResult.error)
       return {
         success: false,
         message: "Error creating user account.",
@@ -111,9 +124,13 @@ export async function getTrainingPlan(planId: string) {
 // New action to save initial plan data when user hits continue
 export async function saveInitialPlanData(formData: FormData) {
   try {
-    // Ensure tables exist
-    await createTraineesTable()
-    await createTrainingPlansTable()
+    console.log("saveInitialPlanData - Starting...")
+
+    // Ensure tables exist first
+    const traineesResult = await createTraineesTable()
+    const plansResult = await createTrainingPlansTable()
+
+    console.log("saveInitialPlanData - Tables created:", { traineesResult, plansResult })
 
     // Extract form data
     const firstName = formData.get("firstName") as string
@@ -126,24 +143,63 @@ export async function saveInitialPlanData(formData: FormData) {
     const raceDistance = (formData.get("raceDistance") as string) || null
     const personalBest = (formData.get("personalBest") as string) || null
 
-    // Validate required fields
-    if (!firstName || !lastName || !email || !goal || !experience || isNaN(daysPerWeek) || isNaN(currentMileage)) {
+    // Debug logging
+    console.log("saveInitialPlanData - Form data:", {
+      firstName,
+      lastName,
+      email,
+      goal,
+      experience,
+      daysPerWeek,
+      currentMileage,
+      raceDistance,
+      personalBest,
+    })
+
+    // More lenient validation - trim whitespace and check
+    const trimmedFirstName = firstName?.trim()
+    const trimmedLastName = lastName?.trim()
+    const trimmedEmail = email?.trim()
+
+    if (
+      !trimmedFirstName ||
+      !trimmedLastName ||
+      !trimmedEmail ||
+      !goal ||
+      !experience ||
+      isNaN(daysPerWeek) ||
+      isNaN(currentMileage)
+    ) {
+      console.log("saveInitialPlanData - Validation failed:", {
+        firstName: !!trimmedFirstName,
+        lastName: !!trimmedLastName,
+        email: !!trimmedEmail,
+        goal: !!goal,
+        experience: !!experience,
+        daysPerWeek: !isNaN(daysPerWeek),
+        currentMileage: !isNaN(currentMileage),
+      })
       return {
         success: false,
-        message: "Please fill in all required fields.",
+        message: "Please fill in all required fields (First Name, Last Name, Email).",
       }
     }
 
     // Create or get user
-    const userResult = await createOrGetUser(firstName, lastName, email)
+    console.log("saveInitialPlanData - Creating/getting user...")
+    const userResult = await createOrGetUser(trimmedFirstName, trimmedLastName, trimmedEmail)
     if (!userResult.success) {
+      console.log("saveInitialPlanData - User creation failed:", userResult.error)
       return {
         success: false,
-        message: "Error creating user account.",
+        message: "Error creating user account: " + (userResult.error?.message || "Unknown error"),
       }
     }
 
+    console.log("saveInitialPlanData - User result:", userResult)
+
     // Insert training plan
+    console.log("saveInitialPlanData - Inserting training plan...")
     const result = await sql`
       INSERT INTO training_plans (
         user_id,
@@ -178,7 +234,7 @@ export async function saveInitialPlanData(formData: FormData) {
     console.error("Error saving initial training plan data:", error)
     return {
       success: false,
-      message: "There was an error saving your plan data. Please try again.",
+      message: "There was an error saving your plan data: " + (error?.message || "Unknown error"),
     }
   }
 }
