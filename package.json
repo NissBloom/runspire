@@ -4,8 +4,10 @@
   "private": true,
   "scripts": {
     "build": "next build",
+    "db:ensure": "tsx scripts/ensure-db.ts",
     "dev": "next dev",
     "lint": "next lint",
+    "migrate": "cross-env DATABASE_URL=$DATABASE_URL_UNPOOLED drizzle-kit migrate",
     "start": "next start"
   },
   "dependencies": {
