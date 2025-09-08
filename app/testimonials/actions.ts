@@ -137,15 +137,48 @@ export async function getAllTestimonials() {
     await createTraineesTable()
     await createTestimonialsTable()
 
+    // First try to get testimonials with user info via JOIN
     const result = await sql`
-      SELECT t.*, tr.first_name, tr.last_name, tr.email
+      SELECT 
+        t.id,
+        t.user_id,
+        t.achievement,
+        t.comment,
+        t.rating,
+        t.image_url,
+        t.improvement_feedback,
+        t.status,
+        t.created_at,
+        COALESCE(tr.first_name, 'Unknown') as first_name,
+        COALESCE(tr.last_name, 'User') as last_name,
+        COALESCE(tr.email, '') as email
       FROM testimonials t
-      JOIN trainees tr ON t.user_id = tr.id
+      LEFT JOIN trainees tr ON t.user_id = tr.id
       ORDER BY t.created_at DESC
     `
+
+    console.log(`Found ${result.rows.length} testimonials in database`)
     return result.rows
   } catch (error) {
     console.error("Error fetching testimonials:", error)
-    return []
+
+    // Fallback: try to get testimonials without JOIN
+    try {
+      const fallbackResult = await sql`
+        SELECT * FROM testimonials ORDER BY created_at DESC
+      `
+      console.log(`Fallback query found ${fallbackResult.rows.length} testimonials`)
+
+      // Add default user info for testimonials without user data
+      return fallbackResult.rows.map((testimonial) => ({
+        ...testimonial,
+        first_name: "Unknown",
+        last_name: "User",
+        email: "",
+      }))
+    } catch (fallbackError) {
+      console.error("Fallback query also failed:", fallbackError)
+      return []
+    }
   }
 }
