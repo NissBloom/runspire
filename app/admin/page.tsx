@@ -12,13 +12,48 @@ import { Star } from "lucide-react"
 import { approveTestimonial, rejectTestimonial, updateTestimonial } from "./actions"
 import { getPackageById } from "@/lib/data"
 
+interface Testimonial {
+  id: number
+  first_name: string
+  last_name: string
+  email: string
+  achievement: string
+  comment: string
+  rating: number
+  status: string
+  created_at: string
+  image_url?: string
+  improvement_feedback?: string
+}
+
+interface Request {
+  id: number
+  first_name: string
+  last_name: string
+  email: string
+  package_type: string
+  goal: string
+  status: string
+  created_at: string
+}
+
+interface Plan {
+  id: number
+  name: string
+  email: string
+  goal: string
+  experience: string
+  days_per_week: number
+  created_at: string
+}
+
 export default function AdminPage() {
   const [connectionStatus, setConnectionStatus] = useState({ success: false, database: "", error: "" })
-  const [requests, setRequests] = useState([])
-  const [plans, setPlans] = useState([])
-  const [testimonials, setTestimonials] = useState([])
+  const [requests, setRequests] = useState<Request[]>([])
+  const [plans, setPlans] = useState<Plan[]>([])
+  const [testimonials, setTestimonials] = useState<Testimonial[]>([])
   const [loading, setLoading] = useState(true)
-  const [selectedTestimonial, setSelectedTestimonial] = useState(null)
+  const [selectedTestimonial, setSelectedTestimonial] = useState<Testimonial | null>(null)
   const [viewDialogOpen, setViewDialogOpen] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [editForm, setEditForm] = useState({
@@ -46,10 +81,19 @@ export default function AdminPage() {
         const plansData = await plansRes.json()
         setPlans(plansData.plans || [])
 
-        // Fetch testimonials
-        const testimonialsRes = await fetch("/api/testimonials")
-        const testimonialsData = await testimonialsRes.json()
-        setTestimonials(testimonialsData.testimonials || [])
+        // Fetch testimonials with better error handling
+        try {
+          const testimonialsRes = await fetch("/api/testimonials")
+          if (!testimonialsRes.ok) {
+            throw new Error(`HTTP error! status: ${testimonialsRes.status}`)
+          }
+          const testimonialsData = await testimonialsRes.json()
+          console.log("Testimonials data received:", testimonialsData)
+          setTestimonials(testimonialsData.testimonials || [])
+        } catch (testimonialError) {
+          console.error("Error fetching testimonials:", testimonialError)
+          setTestimonials([])
+        }
       } catch (error) {
         console.error("Error fetching data:", error)
       } finally {
@@ -60,7 +104,7 @@ export default function AdminPage() {
     fetchData()
   }, [])
 
-  const handleViewTestimonial = (testimonial) => {
+  const handleViewTestimonial = (testimonial: Testimonial) => {
     setSelectedTestimonial(testimonial)
     setEditForm({
       first_name: testimonial.first_name,
@@ -77,6 +121,8 @@ export default function AdminPage() {
   }
 
   const handleSaveEdit = async () => {
+    if (!selectedTestimonial) return
+
     try {
       const result = await updateTestimonial(selectedTestimonial.id, editForm)
       if (result.success) {
@@ -91,6 +137,8 @@ export default function AdminPage() {
   }
 
   const handleCancelEdit = () => {
+    if (!selectedTestimonial) return
+
     setEditForm({
       first_name: selectedTestimonial.first_name,
       last_name: selectedTestimonial.last_name,
@@ -100,7 +148,7 @@ export default function AdminPage() {
     setIsEditing(false)
   }
 
-  const handleApproveTestimonial = async (id) => {
+  const handleApproveTestimonial = async (id: number) => {
     try {
       const result = await approveTestimonial(id)
       if (result.success) {
@@ -112,7 +160,7 @@ export default function AdminPage() {
     }
   }
 
-  const handleRejectTestimonial = async (id) => {
+  const handleRejectTestimonial = async (id: number) => {
     try {
       const result = await rejectTestimonial(id)
       if (result.success) {
@@ -158,7 +206,7 @@ export default function AdminPage() {
         <TabsList className="mb-6">
           <TabsTrigger value="coaching">Coaching Requests</TabsTrigger>
           <TabsTrigger value="plans">Training Plans</TabsTrigger>
-          <TabsTrigger value="testimonials">Testimonials</TabsTrigger>
+          <TabsTrigger value="testimonials">Testimonials ({testimonials.length})</TabsTrigger>
         </TabsList>
 
         <TabsContent value="coaching">
@@ -318,7 +366,12 @@ export default function AdminPage() {
               </TableBody>
             </Table>
           ) : (
-            <p>No testimonials found.</p>
+            <div className="text-center py-8">
+              <p className="text-gray-500 mb-4">No testimonials found in the database.</p>
+              <p className="text-sm text-gray-400">
+                Testimonials will appear here once users submit them through the testimonials page.
+              </p>
+            </div>
           )}
         </TabsContent>
       </Tabs>
