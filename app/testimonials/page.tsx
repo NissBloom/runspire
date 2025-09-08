@@ -355,6 +355,29 @@ export default function TestimonialsPage() {
               </div>
             )}
 
+            {/* Demo testimonials - temporary examples */}
+            <TestimonialCard
+              name="Sarah M."
+              achievement="First 5K Completion"
+              quote="I never thought I could run a full 5K without stopping, but with the personalized training plan and weekly check-ins, I crossed that finish line with a huge smile! The gradual build-up approach made it feel achievable every step of the way."
+              rating={5}
+              imageSrc="/placeholder.svg?height=80&width=80&text=SM"
+            />
+            <TestimonialCard
+              name="David K."
+              achievement="Marathon PR - 3:45"
+              quote="After years of hitting a plateau around 4:10, the structured speed work and nutrition guidance helped me break through. Shaved 25 minutes off my marathon time and felt strong the entire race. The mental training techniques were game-changers!"
+              rating={5}
+              imageSrc="/placeholder.svg?height=80&width=80&text=DK"
+            />
+            <TestimonialCard
+              name="Emma R."
+              achievement="Return from Injury"
+              quote="Coming back from a stress fracture was scary, but the careful progression plan and focus on form helped me return stronger than ever. Now I'm running pain-free and just completed my first half marathon since the injury. So grateful for the patient, expert guidance!"
+              rating={5}
+              imageSrc="/placeholder.svg?height=80&width=80&text=ER"
+            />
+
             {/* Show approved testimonials from database */}
             {loading ? (
               <div className="md:col-span-2 text-center p-8 duolingo-card">
