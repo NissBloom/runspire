@@ -128,6 +128,13 @@ export default function TestimonialsPage() {
     }
   }
 
+  // Helper function to format name display
+  const formatDisplayName = (firstName, lastName) => {
+    if (!firstName) return "Anonymous"
+    if (!lastName) return firstName
+    return `${firstName} ${lastName.charAt(0)}.`
+  }
+
   return (
     <div className="bg-[#F7F7F7] min-h-screen">
       <div className="container mx-auto px-4 py-12">
@@ -345,7 +352,7 @@ export default function TestimonialsPage() {
               <div className="md:col-span-2">
                 <TestimonialCard
                   key={newTestimonial.id}
-                  name={`${newTestimonial.first_name} ${newTestimonial.last_name}`}
+                  name={formatDisplayName(newTestimonial.first_name, newTestimonial.last_name)}
                   achievement={newTestimonial.achievement}
                   quote={newTestimonial.comment}
                   rating={newTestimonial.rating}
@@ -388,7 +395,7 @@ export default function TestimonialsPage() {
               testimonials.map((testimonial) => (
                 <TestimonialCard
                   key={testimonial.id}
-                  name={`${testimonial.first_name} ${testimonial.last_name}`}
+                  name={formatDisplayName(testimonial.first_name, testimonial.last_name)}
                   achievement={testimonial.achievement}
                   quote={testimonial.comment}
                   rating={testimonial.rating}
