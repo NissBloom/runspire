@@ -9,10 +9,13 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Star, ArrowRight, CheckCircle2, MessageSquare } from "lucide-react"
 import { submitTestimonial } from "./actions"
-import { useTestimonials } from "../providers/testimonials-provider"
 
 export default function TestimonialsPage() {
-  const { testimonials, loading, refreshTestimonials } = useTestimonials()
+  // Remove the useTestimonials import - we'll use direct API calls
+  const [testimonials, setTestimonials] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [loadingAll, setLoadingAll] = useState(false)
+  const [showingAll, setShowingAll] = useState(false)
 
   const [formData, setFormData] = useState({
     firstName: "",
@@ -31,12 +34,15 @@ export default function TestimonialsPage() {
   const [error, setError] = useState("")
   const [newTestimonial, setNewTestimonial] = useState(null)
 
-  // Load user email from localStorage on component mount
+  // Load user email from localStorage and fetch initial testimonials
   useEffect(() => {
     const userEmail = localStorage.getItem("userEmail")
     if (userEmail) {
       setFormData((prev) => ({ ...prev, email: userEmail }))
     }
+
+    // Fetch initial testimonials preview
+    fetchTestimonialsPreview()
   }, [])
 
   // Auto-hide success message after 3 seconds
@@ -116,7 +122,11 @@ export default function TestimonialsPage() {
         }
 
         // Refresh the testimonials list to include the new one
-        await refreshTestimonials(formData.email)
+        if (showingAll) {
+          await fetchAllTestimonials()
+        } else {
+          await fetchTestimonialsPreview()
+        }
       } else {
         setError(result.message || "Something went wrong. Please try again.")
       }
@@ -133,6 +143,35 @@ export default function TestimonialsPage() {
     if (!firstName) return "Anonymous"
     if (!lastName) return firstName
     return `${firstName} ${lastName.charAt(0).toUpperCase()}.`
+  }
+
+  // Add these functions after the useState declarations
+  const fetchTestimonialsPreview = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch("/api/testimonials?preview=true")
+      const data = await response.json()
+      setTestimonials(data.testimonials || [])
+    } catch (error) {
+      console.error("Error fetching preview testimonials:", error)
+      setTestimonials([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const fetchAllTestimonials = async () => {
+    try {
+      setLoadingAll(true)
+      const response = await fetch("/api/testimonials")
+      const data = await response.json()
+      setTestimonials(data.testimonials || [])
+      setShowingAll(true)
+    } catch (error) {
+      console.error("Error fetching all testimonials:", error)
+    } finally {
+      setLoadingAll(false)
+    }
   }
 
   return (
@@ -409,6 +448,20 @@ export default function TestimonialsPage() {
               </div>
             )}
           </div>
+
+          {!showingAll && !loading && testimonials.length >= 5 && (
+            <div className="text-center mb-12">
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={fetchAllTestimonials}
+                disabled={loadingAll}
+                className="border-2 border-run-blue text-run-blue hover:bg-run-blue hover:text-white bg-transparent"
+              >
+                {loadingAll ? "Loading..." : "View All Success Stories"}
+              </Button>
+            </div>
+          )}
 
           <div className="text-center">
             <Button variant="purple" size="lg" className="flex items-center gap-2" asChild>

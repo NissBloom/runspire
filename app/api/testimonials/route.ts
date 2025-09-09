@@ -1,9 +1,18 @@
 import { NextResponse } from "next/server"
 import { getAllTestimonials } from "@/app/testimonials/actions"
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const testimonials = await getAllTestimonials()
+    const { searchParams } = new URL(request.url)
+    const preview = searchParams.get("preview")
+
+    let testimonials
+    if (preview === "true") {
+      const { getTestimonialsPreview } = await import("@/app/testimonials/actions")
+      testimonials = await getTestimonialsPreview(5)
+    } else {
+      testimonials = await getAllTestimonials()
+    }
 
     return NextResponse.json(
       {
@@ -12,7 +21,7 @@ export async function GET() {
       },
       {
         headers: {
-          "Cache-Control": "no-store, max-age=0",
+          "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
         },
       },
     )

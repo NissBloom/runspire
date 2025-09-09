@@ -4,6 +4,8 @@ import { sql } from "@vercel/postgres"
 import { revalidatePath } from "next/cache"
 import { createTestimonialsTable, createTraineesTable } from "@/lib/db"
 
+const IS_PROD = process.env.NODE_ENV === "production"
+
 export interface Testimonial {
   id: number
   first_name: string
@@ -18,8 +20,11 @@ export interface Testimonial {
 
 export async function getAllTestimonials(): Promise<Testimonial[]> {
   try {
-    await createTestimonialsTable()
-    await createTraineesTable()
+    // Only create tables in development - skip in production for speed
+    if (!IS_PROD) {
+      await createTestimonialsTable()
+      await createTraineesTable()
+    }
 
     const result = await sql`
       SELECT 
@@ -46,8 +51,11 @@ export async function getAllTestimonials(): Promise<Testimonial[]> {
 
 export async function getApprovedTestimonials(): Promise<Testimonial[]> {
   try {
-    await createTestimonialsTable()
-    await createTraineesTable()
+    // Only create tables in development - skip in production for speed
+    if (!IS_PROD) {
+      await createTestimonialsTable()
+      await createTraineesTable()
+    }
 
     const result = await sql`
       SELECT 
@@ -69,6 +77,39 @@ export async function getApprovedTestimonials(): Promise<Testimonial[]> {
     return result.rows as Testimonial[]
   } catch (error) {
     console.error("Error fetching approved testimonials:", error)
+    return []
+  }
+}
+
+export async function getTestimonialsPreview(limit = 5): Promise<Testimonial[]> {
+  try {
+    // Only create tables in development - skip in production for speed
+    if (!IS_PROD) {
+      await createTestimonialsTable()
+      await createTraineesTable()
+    }
+
+    const result = await sql`
+      SELECT 
+        t.id,
+        COALESCE(tr.first_name, 'Unknown') as first_name,
+        COALESCE(tr.last_name, 'User') as last_name,
+        t.achievement,
+        t.comment,
+        t.rating,
+        t.status,
+        t.created_at,
+        t.user_id
+      FROM testimonials t
+      LEFT JOIN trainees tr ON t.user_id = tr.id
+      WHERE t.status = 'approved'
+      ORDER BY t.created_at DESC
+      LIMIT ${limit}
+    `
+
+    return result.rows as Testimonial[]
+  } catch (error) {
+    console.error("Error fetching preview testimonials:", error)
     return []
   }
 }

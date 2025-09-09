@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Slider } from "@/components/ui/slider"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ChevronLeft, Calendar, Clock, Zap, MessageCircle } from "lucide-react"
+import { ChevronLeft, Calendar, MessageCircle } from "lucide-react"
 import { saveInitialPlanData, updatePlanCta } from "@/app/plan-builder/actions"
 
 export default function GetStartedPage() {
@@ -123,7 +123,7 @@ export default function GetStartedPage() {
         <div className="mb-12 text-center">
           <h1 className="mb-4 text-4xl font-bold text-primary">Get Started</h1>
           <p className="mx-auto max-w-2xl text-xl text-muted-foreground">
-            Create a customized running plan in just a few steps
+            Share your details - I'll put together a tailored plan for us to review on the call.
           </p>
         </div>
 
@@ -132,7 +132,7 @@ export default function GetStartedPage() {
             <StepIndicator number={1} active={step >= 1} label="Goal" />
             <StepIndicator number={2} active={step >= 2} label="Experience" />
             <StepIndicator number={3} active={step >= 3} label="Schedule" />
-            <StepIndicator number={4} active={step >= 4} label="Plan Preview" />
+            <StepIndicator number={4} active={step >= 4} label="Coaching Options" />
           </div>
 
           <Card>
@@ -322,54 +322,58 @@ export default function GetStartedPage() {
 
               {step === 4 && (
                 <div className="space-y-6">
-                  <h2 className="text-2xl font-bold">Your Personalized Plan Preview</h2>
+                  <h2 className="text-2xl font-bold">Your Coaching Options</h2>
 
-                  <div className="rounded-lg bg-green-100 p-6">
-                    <h3 className="mb-4 text-xl font-bold">
-                      {formData.goal === "5k"
-                        ? "5K"
-                        : formData.goal === "10k"
-                          ? "10K"
-                          : formData.goal === "half"
-                            ? "Half Marathon"
-                            : "Marathon"}{" "}
-                      Training Plan for {formData.firstName} {formData.lastName}
-                    </h3>
+                  <p className="text-gray-600 mb-6">
+                    Based on your{" "}
+                    {formData.goal === "5k"
+                      ? "5K"
+                      : formData.goal === "10k"
+                        ? "10K"
+                        : formData.goal === "half"
+                          ? "half marathon"
+                          : "marathon"}{" "}
+                    goal and {formData.experience} experience level, here are the coaching packages that will help you
+                    succeed:
+                  </p>
 
-                    <div className="mb-6 grid gap-3">
-                      <div className="flex items-center">
-                        <Calendar className="mr-3 h-5 w-5 text-green-700" />
-                        <span className="text-lg">
-                          {formData.goal === "5k"
-                            ? "8"
-                            : formData.goal === "10k"
-                              ? "10"
-                              : formData.goal === "half"
-                                ? "12"
-                                : "16"}{" "}
-                          weeks of progressive training
-                        </span>
+                  {/* Coaching Packages Side by Side */}
+                  <div className="grid md:grid-cols-2 gap-6 mb-8">
+                    <div className="rounded-lg border-2 border-green-500 bg-green-50 p-6">
+                      <div className="flex justify-between items-center mb-3">
+                        <h4 className="text-xl font-bold text-green-700">🟢 Base Package</h4>
+                        <span className="text-xl font-bold">₪100/month</span>
                       </div>
-                      <div className="flex items-center">
-                        <Clock className="mr-3 h-5 w-5 text-green-700" />
-                        <span className="text-lg">{formData.daysPerWeek} runs per week</span>
-                      </div>
-                      <div className="flex items-center">
-                        <Zap className="mr-3 h-5 w-5 text-green-700" />
-                        <span className="text-lg">
-                          {formData.experience === "beginner"
-                            ? "Beginner-friendly"
-                            : formData.experience === "intermediate"
-                              ? "Intermediate"
-                              : "Advanced"}{" "}
-                          intensity level
-                        </span>
-                      </div>
+                      <p className="text-gray-600 mb-4">
+                        Perfect for runners who want structure without heavy check-ins
+                      </p>
+                      <ul className="text-gray-700 space-y-2 mb-4">
+                        <li>• Personalized training plan tailored to your goals & schedule</li>
+                        <li>• Monthly 20-minute call for plan updates and adjustments</li>
+                        <li>• Weekly WhatsApp/email communication to review progress and stay on track</li>
+                      </ul>
                     </div>
 
-                    <p className="mb-6 text-gray-700">
-                      This plan is customized based on your current {formData.currentMileage} Kms per week and will
-                      gradually build your endurance and speed to help you reach your{" "}
+                    <div className="rounded-lg border-2 border-blue-500 bg-blue-50 p-6">
+                      <div className="flex justify-between items-center mb-3">
+                        <h4 className="text-xl font-bold text-blue-700">🔵 Performance Package</h4>
+                        <span className="text-xl font-bold">₪250/month</span>
+                      </div>
+                      <p className="text-gray-600 mb-4">Ideal for runners who want close guidance and accountability</p>
+                      <ul className="text-gray-700 space-y-2 mb-4">
+                        <li>• Everything in Base, plus:</li>
+                        <li>• 20-minute calls every 2 weeks for ongoing support</li>
+                        <li>• Full post-workout analysis (pace, HR, effort, Strava/Garmin uploads)</li>
+                        <li>• Weekly training plan adjustments based on your latest data</li>
+                        <li>• Frequent communication for motivation, accountability, and quick answers</li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  <div className="text-center bg-gray-50 rounded-lg p-6">
+                    <h3 className="text-lg font-bold mb-3">Ready to Start Your Coaching Journey?</h3>
+                    <p className="text-gray-600 mb-6">
+                      Let's discuss which package is right for you and your{" "}
                       {formData.goal === "5k"
                         ? "5K"
                         : formData.goal === "10k"
@@ -377,33 +381,26 @@ export default function GetStartedPage() {
                           : formData.goal === "half"
                             ? "half marathon"
                             : "marathon"}{" "}
-                      goal.
+                      goals.
                     </p>
 
                     <div className="space-y-3">
                       <Button className="w-full" size="lg" onClick={() => handleCtaClick("book_consult", "/book")}>
                         <Calendar className="mr-2 h-5 w-5" />
-                        Book Free 20-min Consult to Finalize Plan
+                        Book Free Consult to Discuss Coaching Package
                       </Button>
 
-                      <Button
-                        variant="outline"
-                        className="w-full bg-transparent"
-                        size="lg"
-                        onClick={() => handleCtaClick("request_plan_pay_later")}
-                      >
-                        Request Plan and Pay Later (₪150)
-                      </Button>
-
-                      <Button
-                        variant="outline"
-                        className="w-full bg-transparent"
-                        size="lg"
-                        onClick={() => handleCtaClick("whatsapp", "https://wa.me/972586690059?text=Hi%20there!")}
-                      >
-                        <MessageCircle className="mr-2 h-5 w-5" />
-                        Contact via WhatsApp
-                      </Button>
+                      <div className="text-center">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleCtaClick("whatsapp", "https://wa.me/972586690059?text=Hi%20there!")}
+                          className="text-xs text-gray-500 hover:text-gray-700"
+                        >
+                          <MessageCircle className="mr-1 h-3 w-3" />
+                          Contact via WhatsApp
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </div>

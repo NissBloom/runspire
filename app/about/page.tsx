@@ -171,9 +171,9 @@ export default function AboutPage() {
               I'm here to help you achieve your goals with personalized coaching and support.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
-              <Link href="/plan-builder">
+              <Link href="/start">
                 <Button variant="outline" size="lg" className="bg-white text-run-blue hover:bg-gray-100">
-                  Build Your Plan
+                  Get Started
                 </Button>
               </Link>
               <Link href="/custom-coaching">

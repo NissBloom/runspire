@@ -14,8 +14,8 @@ export default function Home() {
                 Train smarter. Run stronger. Live better.
               </h1>
               <p className="text-xl mb-8 text-gray-600">
-                Your personal running coach - with simple, sustainable plans that fit your life and keep running fun,
-                from your first 5Ks to sub-3 marathons.
+                I’m here to coach you - guiding you every step, with tailored support that makes running simple,
+                sustainable, and fun. From your first 5K to chasing sub-3 marathons.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link href="/start">
@@ -23,7 +23,7 @@ export default function Home() {
                     Start Your Journey
                   </Button>
                 </Link>
-                <Link href="/info">
+                <Link href="/custom-coaching">
                   <Button variant="outline" size="lg">
                     Learn More
                   </Button>
