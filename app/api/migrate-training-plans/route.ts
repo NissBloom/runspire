@@ -1,25 +1,17 @@
 import { NextResponse } from "next/server"
-import { createTrainingPlansTable, addBundleColumnToTrainingPlans, addCtaColumnToTrainingPlans } from "@/lib/db"
 
 export async function GET() {
   try {
-    // Ensure the training plans table exists with correct schema
-    const tableResult = await createTrainingPlansTable()
-
-    // Add the bundle column if it doesn't exist
-    const bundleResult = await addBundleColumnToTrainingPlans()
-
-    // Add the cta column if it doesn't exist
-    const ctaResult = await addCtaColumnToTrainingPlans()
+    console.log("DEPRECATED: This endpoint is no longer needed.")
+    console.log("Use /api/ensure-training-plans-structure instead for safe migration.")
 
     return NextResponse.json({
       success: true,
-      tableCreated: tableResult.success,
-      bundleColumnAdded: bundleResult.success,
-      ctaColumnAdded: ctaResult.success,
+      message: "This endpoint is deprecated. Use /api/ensure-training-plans-structure for safe migration.",
+      redirect: "/api/ensure-training-plans-structure",
     })
   } catch (error) {
-    console.error("Error during training plans migration:", error)
+    console.error("Error in deprecated migration endpoint:", error)
     return NextResponse.json({ success: false, error: error.message }, { status: 500 })
   }
 }

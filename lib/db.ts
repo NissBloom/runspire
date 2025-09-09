@@ -15,7 +15,7 @@ export async function createTraineesTable() {
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
     `
-    console.log("Ensured trainees table exists")
+    console.log("Ensured trainees table exists (no data modified)")
     return { success: true }
   } catch (error) {
     console.error("Error ensuring trainees table:", error)
@@ -38,7 +38,7 @@ export async function createTestimonialsTable() {
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
     `
-    console.log("Ensured testimonials table exists")
+    console.log("Ensured testimonials table exists (no data modified)")
     return { success: true }
   } catch (error) {
     console.error("Error ensuring testimonials table:", error)
@@ -48,11 +48,11 @@ export async function createTestimonialsTable() {
 
 export async function createTrainingPlansTable() {
   try {
-    // Create table if it doesn't exist with proper structure
+    // Create the table with the CORRECT structure from the start
     await sql`
       CREATE TABLE IF NOT EXISTS training_plans (
         id SERIAL PRIMARY KEY,
-        user_id INTEGER REFERENCES trainees(id) ON DELETE CASCADE,
+        user_id INTEGER NOT NULL REFERENCES trainees(id) ON DELETE CASCADE,
         goal TEXT NOT NULL,
         experience TEXT NOT NULL,
         days_per_week INTEGER NOT NULL,
@@ -65,20 +65,7 @@ export async function createTrainingPlansTable() {
       );
     `
 
-    // Add columns if they don't exist (safe operations)
-    try {
-      await sql`ALTER TABLE training_plans ADD COLUMN IF NOT EXISTS bundle TEXT;`
-    } catch (e) {
-      // Column might already exist, ignore error
-    }
-
-    try {
-      await sql`ALTER TABLE training_plans ADD COLUMN IF NOT EXISTS cta TEXT;`
-    } catch (e) {
-      // Column might already exist, ignore error
-    }
-
-    console.log("Ensured training_plans table exists with all columns")
+    console.log("Ensured training_plans table exists with CORRECT structure (user_id FK, no redundant columns)")
     return { success: true }
   } catch (error) {
     console.error("Error ensuring training_plans table:", error)
@@ -100,7 +87,7 @@ export async function createCoachingRequestsTable() {
         status VARCHAR(255) DEFAULT 'pending'
       );
     `
-    console.log("Ensured coaching_requests table exists")
+    console.log("Ensured coaching_requests table exists (no data modified)")
     return { success: true }
   } catch (error) {
     console.error("Error ensuring coaching_requests table:", error)
@@ -108,46 +95,42 @@ export async function createCoachingRequestsTable() {
   }
 }
 
-// DANGEROUS FUNCTION - Only for development use
-export async function dropAllTables() {
-  // NEVER run this in production
-  if (process.env.NODE_ENV === "production") {
-    console.log("DROP TABLES BLOCKED IN PRODUCTION")
-    return { success: false, error: "Drop tables not allowed in production" }
-  }
-
-  // Only allow if explicitly enabled
-  if (process.env.ALLOW_DB_RESET !== "true") {
-    console.log("DROP TABLES BLOCKED - ALLOW_DB_RESET not set")
-    return { success: false, error: "Drop tables not allowed without ALLOW_DB_RESET=true" }
-  }
-
-  try {
-    // Drop tables in reverse order of dependencies
-    await sql`DROP TABLE IF EXISTS coaching_requests CASCADE;`
-    await sql`DROP TABLE IF EXISTS training_plans CASCADE;`
-    await sql`DROP TABLE IF EXISTS testimonials CASCADE;`
-    await sql`DROP TABLE IF EXISTS trainees CASCADE;`
-    console.log("Dropped all tables (DEVELOPMENT ONLY)")
-    return { success: true }
-  } catch (error) {
-    console.error("Error dropping tables:", error)
-    return { success: false, error }
-  }
-}
-
-// SAFE INITIALIZATION - Only ensures tables exist, NEVER drops data
+// SAFE INITIALIZATION - Only ensures tables exist with CORRECT structure
 export async function initializeDatabase() {
   try {
-    console.log("DB: Ensuring all tables exist (safe mode)")
+    console.log("DB: Ensuring all tables exist with CORRECT structure (SAFE MODE)")
 
-    // Only create tables if they don't exist - NEVER drop existing data
+    // Create tables in correct order (trainees first, then tables that reference it)
     await createTraineesTable()
     await createTestimonialsTable()
-    await createTrainingPlansTable()
     await createCoachingRequestsTable()
 
-    console.log("DB: All tables ensured successfully")
+    // For training_plans, we need to handle potential migration
+    // First check if it exists with wrong structure
+    try {
+      const columns = await sql`
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_name = 'training_plans' AND table_schema = 'public'
+      `
+
+      const columnNames = columns.rows.map((r) => r.column_name)
+      const hasOldStructure =
+        columnNames.includes("first_name") || columnNames.includes("last_name") || columnNames.includes("email")
+
+      if (hasOldStructure) {
+        console.log(
+          "WARNING: training_plans table has old structure. Please run /api/ensure-training-plans-structure to migrate.",
+        )
+      } else {
+        await createTrainingPlansTable()
+      }
+    } catch (error) {
+      // Table doesn't exist, create it with correct structure
+      await createTrainingPlansTable()
+    }
+
+    console.log("DB: All tables ensured successfully - NO DATA WAS MODIFIED")
     return { success: true }
   } catch (error) {
     console.error("Error ensuring database tables:", error)
