@@ -1,7 +1,7 @@
 "use client"
 
 import React from "react"
-
+import Image from "next/image"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { BookOpen, Star, Users } from "lucide-react"
@@ -16,37 +16,14 @@ export function Header() {
   return (
     <header className="bg-white border-b-2 border-gray-100 sticky top-0 z-50">
       <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2">
-          <div className="bg-run-blue rounded-full p-1 flex items-center justify-center h-10 w-10 overflow-hidden">
-            {/* Sprinting figure logo similar to the provided image */}
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              width="24"
-              height="24"
-              fill="none"
-              stroke="white"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="h-6 w-6"
-            >
-              {/* Head */}
-              <circle cx="12" cy="4" r="2" fill="white" stroke="none" />
-
-              {/* Body */}
-              <line x1="12" y1="6" x2="12" y2="12" />
-
-              {/* Arms */}
-              <line x1="12" y1="8" x2="8" y2="6" />
-              <line x1="12" y1="8" x2="16" y2="10" />
-
-              {/* Legs */}
-              <line x1="12" y1="12" x2="9" y2="16" />
-              <line x1="12" y1="12" x2="15" y2="18" />
-            </svg>
-          </div>
-          <span className="text-2xl font-extrabold text-run-dark">Runspire</span>
+        <Link href="/" className="flex items-center">
+          <Image
+            src="/images/runspire-complete-logo.png"
+            alt="Runspire"
+            width={80}
+            height={30}
+            className="object-contain"
+          />
         </Link>
 
         <nav className="hidden md:flex items-center gap-6">
