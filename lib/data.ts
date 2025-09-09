@@ -3,7 +3,7 @@ export const coachingPackages = {
   base: {
     id: "base",
     name: "Base Package",
-    price: "₪100/month",
+    price: "₪200/month",
     features: [
       "Personalized training plan tailored to your goals & schedule",
       "Monthly 20-minute call for plan updates and adjustments",
@@ -13,7 +13,7 @@ export const coachingPackages = {
   performance: {
     id: "performance",
     name: "Performance Package",
-    price: "₪250/month",
+    price: "₪350/month",
     features: [
       "Everything in Base, plus:",
       "20-minute calls every 2 weeks for ongoing support",

@@ -16,14 +16,17 @@ export function Header() {
   return (
     <header className="bg-white border-b-2 border-gray-100 sticky top-0 z-50">
       <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-        <Link href="/" className="flex items-center">
-          <Image
-            src="/images/runspire-complete-logo.png"
-            alt="Runspire"
-            width={80}
-            height={30}
-            className="object-contain"
-          />
+        <Link href="/" className="flex items-center gap-2">
+          <div className="flex items-center justify-center h-12 w-12 overflow-hidden">
+            <Image
+              src="/images/runspire-logo.png"
+              alt="Runspire Logo"
+              width={48}
+              height={48}
+              className="object-contain"
+            />
+          </div>
+          <span className="text-2xl font-extrabold text-run-dark">Runspire</span>
         </Link>
 
         <nav className="hidden md:flex items-center gap-6">

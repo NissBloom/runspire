@@ -322,7 +322,10 @@ export default function GetStartedPage() {
 
               {step === 4 && (
                 <div className="space-y-6">
-                  <h2 className="text-2xl font-bold">Your Coaching Options</h2>
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-2xl font-bold">Your Coaching Options</h2>
+                    <span className="text-sm text-red-600 font-bold">🔥 Opening Deal – Don't Miss Out</span>
+                  </div>
 
                   <p className="text-gray-600 mb-6">
                     Based on your{" "}
@@ -342,7 +345,7 @@ export default function GetStartedPage() {
                     <div className="rounded-lg border-2 border-green-500 bg-green-50 p-6">
                       <div className="flex justify-between items-center mb-3">
                         <h4 className="text-xl font-bold text-green-700">🟢 Base Package</h4>
-                        <span className="text-xl font-bold">₪100/month</span>
+                        <span className="text-xl font-bold">₪200/month</span>
                       </div>
                       <p className="text-gray-600 mb-4">
                         Perfect for runners who want structure without heavy check-ins
@@ -357,7 +360,7 @@ export default function GetStartedPage() {
                     <div className="rounded-lg border-2 border-blue-500 bg-blue-50 p-6">
                       <div className="flex justify-between items-center mb-3">
                         <h4 className="text-xl font-bold text-blue-700">🔵 Performance Package</h4>
-                        <span className="text-xl font-bold">₪250/month</span>
+                        <span className="text-xl font-bold">₪350/month</span>
                       </div>
                       <p className="text-gray-600 mb-4">Ideal for runners who want close guidance and accountability</p>
                       <ul className="text-gray-700 space-y-2 mb-4">

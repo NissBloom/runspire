@@ -110,7 +110,10 @@ export default function CustomCoachingPage() {
             </div>
 
             <div className="mt-8 rounded-lg bg-white p-6 shadow-md">
-              <h3 className="mb-4 text-xl font-bold">Coaching Packages</h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-bold">Coaching Packages</h3>
+                <span className="text-sm text-red-600 font-bold">🔥 Opening Deal – Don't Miss Out</span>
+              </div>
 
               <div className="space-y-4">
                 <div
@@ -123,7 +126,7 @@ export default function CustomCoachingPage() {
                 >
                   <div className="flex justify-between items-center mb-2">
                     <h4 className="font-bold text-green-700">🟢 Base Package</h4>
-                    <span className="font-bold">₪100/month</span>
+                    <span className="font-bold">₪200/month</span>
                   </div>
                   <p className="text-sm text-gray-600 mb-2">
                     Perfect for runners who want structure without heavy check-ins
@@ -145,7 +148,7 @@ export default function CustomCoachingPage() {
                 >
                   <div className="flex justify-between items-center mb-2">
                     <h4 className="font-bold text-blue-700">🔵 Performance Package</h4>
-                    <span className="font-bold">₪250/month</span>
+                    <span className="font-bold">₪350/month</span>
                   </div>
                   <p className="text-sm text-gray-600 mb-2">
                     Ideal for runners who want close guidance and accountability
@@ -176,7 +179,7 @@ export default function CustomCoachingPage() {
                 </div>
 
                 <div className="text-center text-sm text-gray-600 mt-4">
-                  📌 All packages require a minimum 3-month commitment.
+                  📌 All packages require a minimum 2-month commitment.
                 </div>
               </div>
             </div>
@@ -223,8 +226,8 @@ export default function CustomCoachingPage() {
                           <SelectValue placeholder="Select a package" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="base">Base Package (₪100/month)</SelectItem>
-                          <SelectItem value="performance">Performance Package (₪250/month)</SelectItem>
+                          <SelectItem value="base">Base Package (₪200/month)</SelectItem>
+                          <SelectItem value="performance">Performance Package (₪350/month)</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
