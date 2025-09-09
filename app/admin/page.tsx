@@ -39,12 +39,16 @@ interface Request {
 
 interface Plan {
   id: number
-  name: string
+  first_name: string
+  last_name: string
   email: string
   goal: string
   experience: string
   days_per_week: number
   created_at: string
+  current_mileage?: number
+  bundle?: string
+  cta?: string
 }
 
 export default function AdminPage() {
@@ -76,10 +80,31 @@ export default function AdminPage() {
         const requestsData = await requestsRes.json()
         setRequests(requestsData.requests || [])
 
-        // Fetch training plans
-        const plansRes = await fetch("/api/training-plans")
-        const plansData = await plansRes.json()
-        setPlans(plansData.plans || [])
+        // Fetch training plans with better error handling
+        try {
+          const plansRes = await fetch("/api/training-plans")
+          if (!plansRes.ok) {
+            throw new Error(`HTTP error! status: ${plansRes.status}`)
+          }
+          const plansData = await plansRes.json()
+          console.log("Training plans API response:", plansData)
+
+          // Handle different response formats
+          let plansArray = []
+          if (plansData.plans) {
+            plansArray = plansData.plans
+          } else if (plansData.data) {
+            plansArray = plansData.data
+          } else if (Array.isArray(plansData)) {
+            plansArray = plansData
+          }
+
+          console.log("Setting training plans:", plansArray)
+          setPlans(plansArray)
+        } catch (planError) {
+          console.error("Error fetching training plans:", planError)
+          setPlans([])
+        }
 
         // Fetch testimonials with better error handling
         try {
@@ -262,42 +287,101 @@ export default function AdminPage() {
 
         <TabsContent value="plans">
           <h2 className="text-xl font-semibold mb-4">Training Plans</h2>
-          {plans.length > 0 ? (
-            <Table>
-              <TableCaption>List of training plans</TableCaption>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Goal</TableHead>
-                  <TableHead>Experience</TableHead>
-                  <TableHead>Days/Week</TableHead>
-                  <TableHead>Date</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {plans.map((plan) => (
-                  <TableRow key={plan.id}>
-                    <TableCell>{plan.name}</TableCell>
-                    <TableCell>{plan.email}</TableCell>
-                    <TableCell>
-                      {plan.goal === "5k"
-                        ? "5K"
-                        : plan.goal === "10k"
-                          ? "10K"
-                          : plan.goal === "half"
-                            ? "Half Marathon"
-                            : "Marathon"}
-                    </TableCell>
-                    <TableCell>{plan.experience.charAt(0).toUpperCase() + plan.experience.slice(1)}</TableCell>
-                    <TableCell>{plan.days_per_week}</TableCell>
-                    <TableCell>{new Date(plan.created_at).toLocaleDateString()}</TableCell>
+          {loading ? (
+            <div className="flex justify-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          ) : plans.length > 0 ? (
+            <div className="space-y-4">
+              <div className="text-sm text-gray-600 mb-4">Total plans: {plans.length}</div>
+              <Table>
+                <TableCaption>List of training plans</TableCaption>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Goal</TableHead>
+                    <TableHead>Experience</TableHead>
+                    <TableHead>Days/Week</TableHead>
+                    <TableHead>Current Mileage</TableHead>
+                    <TableHead>Bundle</TableHead>
+                    <TableHead>CTA</TableHead>
+                    <TableHead>Date</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {plans.map((plan) => (
+                    <TableRow key={plan.id}>
+                      <TableCell>
+                        {plan.first_name && plan.last_name
+                          ? `${plan.first_name} ${plan.last_name}`
+                          : plan.first_name || plan.last_name || "No name"}
+                        {!plan.first_name && !plan.last_name && (
+                          <span className="text-red-500 text-xs block">Missing user data</span>
+                        )}
+                      </TableCell>
+                      <TableCell>{plan.email || <span className="text-gray-400">No email</span>}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline">
+                          {plan.goal === "5k"
+                            ? "5K"
+                            : plan.goal === "10k"
+                              ? "10K"
+                              : plan.goal === "half"
+                                ? "Half Marathon"
+                                : plan.goal === "full"
+                                  ? "Marathon"
+                                  : plan.goal}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">
+                          {plan.experience?.charAt(0).toUpperCase() + plan.experience?.slice(1) || "Unknown"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{plan.days_per_week || "N/A"}</TableCell>
+                      <TableCell>{plan.current_mileage ? `${plan.current_mileage} km` : "N/A"}</TableCell>
+                      <TableCell>
+                        {plan.bundle ? (
+                          <Badge variant="outline" className="text-xs">
+                            {plan.bundle === "base"
+                              ? "Base"
+                              : plan.bundle === "performance"
+                                ? "Performance"
+                                : plan.bundle}
+                          </Badge>
+                        ) : (
+                          <span className="text-gray-400 text-xs">None</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {plan.cta ? (
+                          <Badge variant="outline" className="text-xs">
+                            {plan.cta === "book_consult"
+                              ? "Book Consult"
+                              : plan.cta === "whatsapp"
+                                ? "WhatsApp"
+                                : plan.cta === "request_plan"
+                                  ? "Request Plan"
+                                  : plan.cta}
+                          </Badge>
+                        ) : (
+                          <span className="text-gray-400 text-xs">None</span>
+                        )}
+                      </TableCell>
+                      <TableCell>{new Date(plan.created_at).toLocaleDateString()}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           ) : (
-            <p>No training plans found.</p>
+            <div className="text-center py-8">
+              <p className="text-gray-500 mb-4">No training plans found.</p>
+              <p className="text-sm text-gray-400">
+                Training plans will appear here once users submit them through the plan builder.
+              </p>
+            </div>
           )}
         </TabsContent>
 

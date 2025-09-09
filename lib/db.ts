@@ -48,7 +48,7 @@ export async function createTestimonialsTable() {
 
 export async function createTrainingPlansTable() {
   try {
-    // Create table if it doesn't exist (NO DROPPING!)
+    // Create table if it doesn't exist with proper structure
     await sql`
       CREATE TABLE IF NOT EXISTS training_plans (
         id SERIAL PRIMARY KEY,
