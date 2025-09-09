@@ -128,6 +128,13 @@ export default function TestimonialsPage() {
     }
   }
 
+  // Helper function to format name display as "FirstName L."
+  const formatDisplayName = (firstName, lastName) => {
+    if (!firstName) return "Anonymous"
+    if (!lastName) return firstName
+    return `${firstName} ${lastName.charAt(0).toUpperCase()}.`
+  }
+
   return (
     <div className="bg-[#F7F7F7] min-h-screen">
       <div className="container mx-auto px-4 py-12">
@@ -345,7 +352,7 @@ export default function TestimonialsPage() {
               <div className="md:col-span-2">
                 <TestimonialCard
                   key={newTestimonial.id}
-                  name={`${newTestimonial.first_name} ${newTestimonial.last_name}`}
+                  name={formatDisplayName(newTestimonial.first_name, newTestimonial.last_name)}
                   achievement={newTestimonial.achievement}
                   quote={newTestimonial.comment}
                   rating={newTestimonial.rating}
@@ -388,7 +395,7 @@ export default function TestimonialsPage() {
               testimonials.map((testimonial) => (
                 <TestimonialCard
                   key={testimonial.id}
-                  name={`${testimonial.first_name} ${testimonial.last_name}`}
+                  name={formatDisplayName(testimonial.first_name, testimonial.last_name)}
                   achievement={testimonial.achievement}
                   quote={testimonial.comment}
                   rating={testimonial.rating}
@@ -418,6 +425,14 @@ export default function TestimonialsPage() {
 }
 
 function TestimonialCard({ name, achievement, quote, rating, imageSrc, isNew = false, status }) {
+  // Check if imageSrc is a real image URL (not placeholder or empty)
+  const hasRealImage =
+    imageSrc &&
+    !imageSrc.includes("/placeholder.svg") &&
+    !imageSrc.includes("placeholder") &&
+    imageSrc.trim() !== "" &&
+    imageSrc !== "/placeholder.svg?height=80&width=80"
+
   return (
     <div className={`duolingo-card p-6 ${isNew ? "border-run-yellow border-4" : ""}`}>
       {isNew && (
@@ -431,19 +446,21 @@ function TestimonialCard({ name, achievement, quote, rating, imageSrc, isNew = f
         </div>
       )}
       <div className="mb-6 flex items-center">
-        <div className="relative">
-          <img
-            src={imageSrc || "/placeholder.svg?height=80&width=80"}
-            alt={name}
-            className="h-16 w-16 rounded-full object-cover border-4 border-white shadow-lg"
-          />
-          <div className="absolute -bottom-1 -right-1 bg-white rounded-full p-1 shadow-md">
-            <div className="bg-run-blue text-white p-1 rounded-full">
-              <Star className="h-4 w-4 fill-white" />
+        {hasRealImage && (
+          <div className="relative mr-4">
+            <img
+              src={imageSrc || "/placeholder.svg"}
+              alt={name}
+              className="h-16 w-16 rounded-full object-cover border-4 border-white shadow-lg"
+            />
+            <div className="absolute -bottom-1 -right-1 bg-white rounded-full p-1 shadow-md">
+              <div className="bg-run-blue text-white p-1 rounded-full">
+                <Star className="h-4 w-4 fill-white" />
+              </div>
             </div>
           </div>
-        </div>
-        <div className="ml-4">
+        )}
+        <div>
           <h3 className="text-xl font-extrabold text-run-dark">{name}</h3>
           <p className="text-gray-600">{achievement}</p>
           <div className="mt-2 flex">
