@@ -1,8 +1,8 @@
 import { sql } from "@vercel/postgres"
 import { unstable_noStore as noStore } from "next/cache"
 
-// Log database connection to verify we're connecting to the right database
-console.log("Connecting to database:", process.env.POSTGRES_DATABASE || "run_coach")
+// Safe logging without exposing database details
+console.log("DB: Initializing connection")
 
 export async function createTraineesTable() {
   try {
@@ -15,10 +15,10 @@ export async function createTraineesTable() {
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
     `
-    console.log("Created trainees table")
+    console.log("Ensured trainees table exists")
     return { success: true }
   } catch (error) {
-    console.error("Error creating trainees table:", error)
+    console.error("Error ensuring trainees table:", error)
     return { success: false, error }
   }
 }
@@ -38,33 +38,19 @@ export async function createTestimonialsTable() {
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
     `
-    console.log("Created testimonials table")
+    console.log("Ensured testimonials table exists")
     return { success: true }
   } catch (error) {
-    console.error("Error creating testimonials table:", error)
+    console.error("Error ensuring testimonials table:", error)
     return { success: false, error }
   }
 }
 
 export async function createTrainingPlansTable() {
   try {
-    // First check if the table exists and what columns it has
-    const tableInfo = await sql`
-      SELECT column_name 
-      FROM information_schema.columns 
-      WHERE table_name = 'training_plans' AND table_schema = 'public';
-    `
-
-    console.log(
-      "Existing training_plans columns:",
-      tableInfo.rows.map((row) => row.column_name),
-    )
-
-    // Drop and recreate the table to ensure correct schema
-    await sql`DROP TABLE IF EXISTS training_plans CASCADE;`
-
+    // Create table if it doesn't exist (NO DROPPING!)
     await sql`
-      CREATE TABLE training_plans (
+      CREATE TABLE IF NOT EXISTS training_plans (
         id SERIAL PRIMARY KEY,
         user_id INTEGER REFERENCES trainees(id) ON DELETE CASCADE,
         goal TEXT NOT NULL,
@@ -78,10 +64,24 @@ export async function createTrainingPlansTable() {
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
     `
-    console.log("Created training_plans table with correct schema")
+
+    // Add columns if they don't exist (safe operations)
+    try {
+      await sql`ALTER TABLE training_plans ADD COLUMN IF NOT EXISTS bundle TEXT;`
+    } catch (e) {
+      // Column might already exist, ignore error
+    }
+
+    try {
+      await sql`ALTER TABLE training_plans ADD COLUMN IF NOT EXISTS cta TEXT;`
+    } catch (e) {
+      // Column might already exist, ignore error
+    }
+
+    console.log("Ensured training_plans table exists with all columns")
     return { success: true }
   } catch (error) {
-    console.error("Error creating training_plans table:", error)
+    console.error("Error ensuring training_plans table:", error)
     return { success: false, error }
   }
 }
@@ -100,22 +100,35 @@ export async function createCoachingRequestsTable() {
         status VARCHAR(255) DEFAULT 'pending'
       );
     `
-    console.log("Created coaching_requests table")
+    console.log("Ensured coaching_requests table exists")
     return { success: true }
   } catch (error) {
-    console.error("Error creating coaching_requests table:", error)
+    console.error("Error ensuring coaching_requests table:", error)
     return { success: false, error }
   }
 }
 
+// DANGEROUS FUNCTION - Only for development use
 export async function dropAllTables() {
+  // NEVER run this in production
+  if (process.env.NODE_ENV === "production") {
+    console.log("DROP TABLES BLOCKED IN PRODUCTION")
+    return { success: false, error: "Drop tables not allowed in production" }
+  }
+
+  // Only allow if explicitly enabled
+  if (process.env.ALLOW_DB_RESET !== "true") {
+    console.log("DROP TABLES BLOCKED - ALLOW_DB_RESET not set")
+    return { success: false, error: "Drop tables not allowed without ALLOW_DB_RESET=true" }
+  }
+
   try {
     // Drop tables in reverse order of dependencies
     await sql`DROP TABLE IF EXISTS coaching_requests CASCADE;`
     await sql`DROP TABLE IF EXISTS training_plans CASCADE;`
     await sql`DROP TABLE IF EXISTS testimonials CASCADE;`
     await sql`DROP TABLE IF EXISTS trainees CASCADE;`
-    console.log("Dropped all tables")
+    console.log("Dropped all tables (DEVELOPMENT ONLY)")
     return { success: true }
   } catch (error) {
     console.error("Error dropping tables:", error)
@@ -123,21 +136,21 @@ export async function dropAllTables() {
   }
 }
 
+// SAFE INITIALIZATION - Only ensures tables exist, NEVER drops data
 export async function initializeDatabase() {
   try {
-    // Drop all existing tables
-    await dropAllTables()
+    console.log("DB: Ensuring all tables exist (safe mode)")
 
-    // Create all tables in correct order
+    // Only create tables if they don't exist - NEVER drop existing data
     await createTraineesTable()
     await createTestimonialsTable()
     await createTrainingPlansTable()
     await createCoachingRequestsTable()
 
-    console.log("Database initialized successfully")
+    console.log("DB: All tables ensured successfully")
     return { success: true }
   } catch (error) {
-    console.error("Error initializing database:", error)
+    console.error("Error ensuring database tables:", error)
     return { success: false, error }
   }
 }
@@ -272,16 +285,16 @@ export async function getTrainingPlans() {
 export async function verifyDatabaseConnection() {
   try {
     const result = await sql`SELECT current_database() as database_name;`
-    console.log("Successfully connected to database:", result.rows[0].database_name)
+    console.log("DB: Connection verified successfully")
     return {
       success: true,
-      database: result.rows[0].database_name,
+      database: "connected",
     }
   } catch (error) {
-    console.error("Database connection error:", error)
+    console.error("DB: Connection error")
     return {
       success: false,
-      error: error.message,
+      error: "Connection failed",
     }
   }
 }
