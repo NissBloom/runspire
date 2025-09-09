@@ -1,297 +1,461 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { Badge } from "@/components/ui/badge"
-import { Star, ArrowLeft } from "lucide-react"
-import Link from "next/link"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Star, ArrowRight, CheckCircle2, MessageSquare } from "lucide-react"
 import { submitTestimonial } from "./actions"
-import { useActionState } from "react"
-
-interface Testimonial {
-  id: number
-  first_name: string
-  last_name: string
-  achievement: string
-  comment: string
-  rating: number
-  status: string
-  created_at: string
-}
-
-// Helper function to format display name as "FirstName L."
-const formatDisplayName = (firstName: string, lastName: string): string => {
-  if (!firstName || !lastName) return "Anonymous"
-  return `${firstName} ${lastName.charAt(0).toUpperCase()}.`
-}
-
-// Demo testimonials with proper formatting
-const demoTestimonials = [
-  {
-    id: "demo-1",
-    name: "Sarah M.",
-    achievement: "First Marathon Completion",
-    comment:
-      "The personalized training plan helped me complete my first marathon in 4:15! The nutrition guidance was especially valuable during those long training runs.",
-    rating: 5,
-    status: "approved",
-  },
-  {
-    id: "demo-2",
-    name: "David K.",
-    achievement: "10K Personal Best",
-    comment:
-      "Improved my 10K time by 3 minutes using the structured interval training. The mental training techniques really helped during race day.",
-    rating: 5,
-    status: "approved",
-  },
-  {
-    id: "demo-3",
-    name: "Maria L.",
-    achievement: "Half Marathon Success",
-    comment:
-      "As a beginner runner, the progressive training approach was perfect. Completed my first half marathon without injury and loved every minute!",
-    rating: 5,
-    status: "approved",
-  },
-]
+import { useTestimonials } from "../providers/testimonials-provider"
 
 export default function TestimonialsPage() {
-  const [testimonials, setTestimonials] = useState<Testimonial[]>([])
-  const [showForm, setShowForm] = useState(false)
-  const [loading, setLoading] = useState(true)
-  const [state, formAction, isPending] = useActionState(submitTestimonial, null)
+  const { testimonials, loading, refreshTestimonials } = useTestimonials()
 
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    achievement: "",
+    comment: "",
+    rating: 5,
+    imageUrl: "/placeholder.svg?height=80&width=80",
+    improvementOption: "nothing_great",
+    otherImprovementFeedback: "",
+  })
+  const [showForm, setShowForm] = useState(false)
+  const [submitted, setSubmitted] = useState(false)
+  const [formLoading, setFormLoading] = useState(false)
+  const [error, setError] = useState("")
+  const [newTestimonial, setNewTestimonial] = useState(null)
+
+  // Load user email from localStorage on component mount
   useEffect(() => {
-    fetchTestimonials()
+    const userEmail = localStorage.getItem("userEmail")
+    if (userEmail) {
+      setFormData((prev) => ({ ...prev, email: userEmail }))
+    }
   }, [])
 
+  // Auto-hide success message after 3 seconds
   useEffect(() => {
-    if (state?.success) {
-      setShowForm(false)
-      fetchTestimonials() // Refresh testimonials after successful submission
+    let timer
+    if (submitted) {
+      timer = setTimeout(() => {
+        setSubmitted(false)
+        setShowForm(false)
+        setFormData({
+          firstName: "",
+          lastName: "",
+          email: localStorage.getItem("userEmail") || "",
+          achievement: "",
+          comment: "",
+          rating: 5,
+          imageUrl: "/placeholder.svg?height=80&width=80",
+          improvementOption: "nothing_great",
+          otherImprovementFeedback: "",
+        })
+      }, 3000)
     }
-  }, [state])
+    return () => clearTimeout(timer)
+  }, [submitted])
 
-  const fetchTestimonials = async () => {
+  const handleChange = (e) => {
+    const { id, value } = e.target
+    setFormData((prev) => ({ ...prev, [id]: value }))
+  }
+
+  const handleSelectChange = (field, value) => {
+    setFormData((prev) => ({ ...prev, [field]: value }))
+  }
+
+  const handleRatingChange = (rating) => {
+    setFormData((prev) => ({ ...prev, rating }))
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setFormLoading(true)
+    setError("")
+
     try {
-      const response = await fetch("/api/testimonials")
-      if (response.ok) {
-        const data = await response.json()
-        const testimonialData = data.testimonials || data.data || data || []
-        console.log("Fetched testimonials:", testimonialData.length)
-        setTestimonials(testimonialData)
+      // Create FormData object
+      const formDataObj = new FormData()
+
+      // Add all form fields
+      formDataObj.append("firstName", formData.firstName)
+      formDataObj.append("lastName", formData.lastName)
+      formDataObj.append("email", formData.email)
+      formDataObj.append("achievement", formData.achievement)
+      formDataObj.append("comment", formData.comment)
+      formDataObj.append("rating", formData.rating.toString())
+      formDataObj.append("imageUrl", formData.imageUrl)
+
+      // Combine improvement feedback
+      let improvementFeedback = formData.improvementOption
+      if (formData.improvementOption === "other" && formData.otherImprovementFeedback) {
+        improvementFeedback += `: ${formData.otherImprovementFeedback}`
       }
-    } catch (error) {
-      console.error("Error fetching testimonials:", error)
+      formDataObj.append("improvementFeedback", improvementFeedback)
+
+      // Save user email to localStorage
+      if (formData.email) {
+        localStorage.setItem("userEmail", formData.email)
+      }
+
+      // Submit the form
+      const result = await submitTestimonial(formDataObj)
+
+      if (result.success) {
+        setSubmitted(true)
+        // Store the newly submitted testimonial to display it
+        if (result.testimonial && result.testimonial.rating > 3) {
+          setNewTestimonial(result.testimonial)
+        }
+
+        // Refresh the testimonials list to include the new one
+        await refreshTestimonials(formData.email)
+      } else {
+        setError(result.message || "Something went wrong. Please try again.")
+      }
+    } catch (err) {
+      console.error("Error submitting form:", err)
+      setError("An unexpected error occurred. Please try again.")
     } finally {
-      setLoading(false)
+      setFormLoading(false)
     }
-  }
-
-  const renderStars = (rating: number) => {
-    return Array.from({ length: 5 }, (_, i) => (
-      <Star key={i} className={`w-4 h-4 ${i < rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}`} />
-    ))
-  }
-
-  if (showForm) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 py-12 px-4">
-        <div className="max-w-2xl mx-auto">
-          <Button variant="ghost" onClick={() => setShowForm(false)} className="mb-6">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Success Stories
-          </Button>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-2xl font-bold text-center">Share Your Success Story</CardTitle>
-              <p className="text-center text-gray-600">Help inspire other runners by sharing your achievement</p>
-            </CardHeader>
-            <CardContent>
-              <form action={formAction} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="firstName" className="block text-sm font-medium mb-2">
-                      First Name *
-                    </label>
-                    <Input id="firstName" name="firstName" required placeholder="Your first name" />
-                  </div>
-                  <div>
-                    <label htmlFor="lastName" className="block text-sm font-medium mb-2">
-                      Last Name *
-                    </label>
-                    <Input id="lastName" name="lastName" required placeholder="Your last name" />
-                  </div>
-                </div>
-
-                <div>
-                  <label htmlFor="email" className="block text-sm font-medium mb-2">
-                    Email *
-                  </label>
-                  <Input id="email" name="email" type="email" required placeholder="your.email@example.com" />
-                </div>
-
-                <div>
-                  <label htmlFor="achievement" className="block text-sm font-medium mb-2">
-                    Your Achievement *
-                  </label>
-                  <Input
-                    id="achievement"
-                    name="achievement"
-                    required
-                    placeholder="e.g., First Marathon, 5K Personal Best, etc."
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="comment" className="block text-sm font-medium mb-2">
-                    Your Story *
-                  </label>
-                  <Textarea
-                    id="comment"
-                    name="comment"
-                    required
-                    rows={4}
-                    placeholder="Tell us about your running journey and how our coaching helped you achieve your goal..."
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="rating" className="block text-sm font-medium mb-2">
-                    Rating *
-                  </label>
-                  <select
-                    id="rating"
-                    name="rating"
-                    required
-                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="">Select a rating</option>
-                    <option value="5">⭐⭐⭐⭐⭐ Excellent</option>
-                    <option value="4">⭐⭐⭐⭐ Very Good</option>
-                    <option value="3">⭐⭐⭐ Good</option>
-                    <option value="2">⭐⭐ Fair</option>
-                    <option value="1">⭐ Poor</option>
-                  </select>
-                </div>
-
-                {state?.error && (
-                  <div className="p-4 bg-red-50 border border-red-200 rounded-md">
-                    <p className="text-red-600 text-sm">{state.error}</p>
-                  </div>
-                )}
-
-                {state?.success && (
-                  <div className="p-4 bg-green-50 border border-green-200 rounded-md">
-                    <p className="text-green-600 text-sm">
-                      Thank you for sharing your success story! It will be reviewed and published soon.
-                    </p>
-                  </div>
-                )}
-
-                <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={isPending}>
-                  {isPending ? "Submitting..." : "Submit Your Story"}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 py-12 px-4">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">Success Stories</h1>
-          <p className="text-xl text-gray-600 mb-8">
-            Real achievements from real runners who transformed their performance
+    <div className="bg-[#F7F7F7] min-h-screen">
+      <div className="container mx-auto px-4 py-12">
+        <div className="mb-12 text-center">
+          <h1 className="mb-4 text-4xl font-extrabold text-run-dark">Success Stories</h1>
+          <p className="mx-auto max-w-2xl text-xl text-gray-600">
+            See how our runners have achieved their goals and transformed their running
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button onClick={() => setShowForm(true)} className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3">
-              Share Your Success Story
-            </Button>
-            <Link href="/">
-              <Button variant="outline" className="px-8 py-3 bg-transparent">
-                Back to Home
-              </Button>
-            </Link>
-          </div>
         </div>
 
-        {/* Loading State */}
-        {loading && (
-          <div className="text-center py-12">
-            <p className="text-gray-600">Loading success stories...</p>
-          </div>
-        )}
+        <div className="mx-auto max-w-5xl">
+          {!showForm && !submitted ? (
+            <div className="text-center mb-12">
+              <Button variant="orange" size="lg" className="flex items-center gap-2" onClick={() => setShowForm(true)}>
+                <MessageSquare className="h-5 w-5" />
+                Share Your Success Story
+              </Button>
+            </div>
+          ) : submitted ? (
+            <Card className="duolingo-card mb-12 bg-run-green/10 border-run-green">
+              <CardContent className="flex flex-col items-center p-8 text-center">
+                <div className="bg-run-green text-white p-4 rounded-full mb-4">
+                  <CheckCircle2 className="h-10 w-10" />
+                </div>
+                <h2 className="mb-2 text-2xl font-bold text-run-dark">Thank You!</h2>
+                <p className="mb-6 text-gray-600">
+                  Your testimonial has been submitted successfully and will be reviewed by our team before being
+                  published.
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="duolingo-card mb-12">
+              <CardContent className="p-8">
+                <h2 className="text-2xl font-bold mb-6 text-run-dark">Share Your Success Story</h2>
 
-        {/* Testimonials Grid */}
-        {!loading && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {/* Demo Testimonials */}
-            {demoTestimonials.map((testimonial) => (
-              <Card key={testimonial.id} className="h-full">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-semibold text-lg">{testimonial.name}</h3>
-                      <Badge variant="secondary" className="mt-1">
-                        {testimonial.achievement}
-                      </Badge>
+                {error && (
+                  <div className="mb-6 bg-run-red/10 text-run-red p-4 rounded-xl border-2 border-run-red">{error}</div>
+                )}
+
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  <div className="grid gap-6 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <label htmlFor="firstName" className="text-sm font-bold text-run-dark">
+                        First Name *
+                      </label>
+                      <Input
+                        id="firstName"
+                        value={formData.firstName}
+                        onChange={handleChange}
+                        required
+                        className="duolingo-input"
+                      />
                     </div>
-                    <div className="flex">{renderStars(testimonial.rating)}</div>
+
+                    <div className="space-y-2">
+                      <label htmlFor="lastName" className="text-sm font-bold text-run-dark">
+                        Last Name *
+                      </label>
+                      <Input
+                        id="lastName"
+                        value={formData.lastName}
+                        onChange={handleChange}
+                        required
+                        className="duolingo-input"
+                      />
+                    </div>
                   </div>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-gray-600 leading-relaxed">"{testimonial.comment}"</p>
-                </CardContent>
-              </Card>
-            ))}
 
-            {/* Database Testimonials */}
-            {testimonials
-              .filter((t) => t.status === "approved")
-              .map((testimonial) => (
-                <Card key={testimonial.id} className="h-full">
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-semibold text-lg">
-                          {formatDisplayName(testimonial.first_name, testimonial.last_name)}
-                        </h3>
-                        <Badge variant="secondary" className="mt-1">
-                          {testimonial.achievement}
-                        </Badge>
-                      </div>
-                      <div className="flex">{renderStars(testimonial.rating)}</div>
+                  <div className="space-y-2">
+                    <label htmlFor="email" className="text-sm font-bold text-run-dark">
+                      Email Address *
+                    </label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="Your email address"
+                      value={formData.email}
+                      onChange={handleChange}
+                      required
+                      className="duolingo-input"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label htmlFor="achievement" className="text-sm font-bold text-run-dark">
+                      Achievement/Subject *
+                    </label>
+                    <Input
+                      id="achievement"
+                      placeholder="e.g., First Marathon, 10K Personal Best"
+                      value={formData.achievement}
+                      onChange={handleChange}
+                      required
+                      className="duolingo-input"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label htmlFor="comment" className="text-sm font-bold text-run-dark">
+                      Your Story *
+                    </label>
+                    <Textarea
+                      id="comment"
+                      placeholder="Share your experience with Runspire..."
+                      rows={4}
+                      value={formData.comment}
+                      onChange={handleChange}
+                      required
+                      className="duolingo-input resize-none"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label htmlFor="imageUrl" className="text-sm font-bold text-run-dark">
+                      Profile Photo URL (optional)
+                    </label>
+                    <Input
+                      id="imageUrl"
+                      placeholder="Enter image URL or leave default"
+                      value={formData.imageUrl}
+                      onChange={handleChange}
+                      className="duolingo-input"
+                    />
+                    <p className="text-xs text-gray-500">Leave blank to use default avatar</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-run-dark">Rating *</label>
+                    <div className="flex gap-2">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <button
+                          key={star}
+                          type="button"
+                          onClick={() => handleRatingChange(star)}
+                          className="focus:outline-none bg-white p-2 rounded-xl border-2 border-gray-200 hover:bg-gray-50"
+                        >
+                          <Star
+                            className={`h-8 w-8 ${
+                              star <= formData.rating ? "fill-run-yellow text-run-yellow" : "text-gray-300"
+                            }`}
+                          />
+                        </button>
+                      ))}
                     </div>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-gray-600 leading-relaxed">"{testimonial.comment}"</p>
-                  </CardContent>
-                </Card>
-              ))}
-          </div>
-        )}
+                  </div>
 
-        {/* Empty State */}
-        {!loading && testimonials.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-gray-600 mb-4">Be the first to share your success story!</p>
-            <Button onClick={() => setShowForm(true)} className="bg-blue-600 hover:bg-blue-700 text-white">
-              Share Your Story
+                  {/* Improvement Feedback Section - Not displayed publicly */}
+                  <div className="space-y-4 border-t-2 border-gray-100 pt-6 mt-6">
+                    <h3 className="font-bold text-run-dark">Help Us Improve</h3>
+                    <p className="text-sm text-gray-600 mb-4">
+                      This feedback will only be visible to our coaches to help us improve our services.
+                    </p>
+
+                    <div className="space-y-2">
+                      <label className="text-sm font-bold text-run-dark">What could we have done better?</label>
+                      <Select
+                        value={formData.improvementOption}
+                        onValueChange={(value) => handleSelectChange("improvementOption", value)}
+                        defaultValue="nothing_great"
+                      >
+                        <SelectTrigger className="duolingo-input">
+                          <SelectValue placeholder="Select an option" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="nothing_great">Nothing, everything was great</SelectItem>
+                          <SelectItem value="more_personalization">More personalized training</SelectItem>
+                          <SelectItem value="better_communication">Better communication</SelectItem>
+                          <SelectItem value="more_resources">More training resources</SelectItem>
+                          <SelectItem value="better_app">Improved app/website experience</SelectItem>
+                          <SelectItem value="more_feedback">More feedback on my progress</SelectItem>
+                          <SelectItem value="other">Other (please specify)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {formData.improvementOption === "other" && (
+                      <div className="space-y-2">
+                        <label htmlFor="otherImprovementFeedback" className="text-sm font-bold text-run-dark">
+                          Please specify
+                        </label>
+                        <Textarea
+                          id="otherImprovementFeedback"
+                          placeholder="Tell us what we could improve..."
+                          rows={2}
+                          value={formData.otherImprovementFeedback}
+                          onChange={handleChange}
+                          className="duolingo-input resize-none"
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex gap-4 pt-4">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setShowForm(false)}
+                      className="border-2 border-gray-300"
+                    >
+                      Cancel
+                    </Button>
+                    <Button type="submit" variant="orange" disabled={formLoading} className="flex-1">
+                      {formLoading ? "Submitting..." : "Submit Your Story"}
+                    </Button>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
+          )}
+
+          <div className="grid gap-8 md:grid-cols-2 mb-12">
+            {/* Show newly submitted testimonial first if it exists and has rating > 3 */}
+            {newTestimonial && newTestimonial.rating > 3 && (
+              <div className="md:col-span-2">
+                <TestimonialCard
+                  key={newTestimonial.id}
+                  name={`${newTestimonial.first_name} ${newTestimonial.last_name}`}
+                  achievement={newTestimonial.achievement}
+                  quote={newTestimonial.comment}
+                  rating={newTestimonial.rating}
+                  imageSrc={newTestimonial.image_url}
+                  isNew={true}
+                />
+              </div>
+            )}
+
+            {/* Demo testimonials - temporary examples */}
+            <TestimonialCard
+              name="Sarah M."
+              achievement="First 5K Completion"
+              quote="I never thought I could run a full 5K without stopping, but with the personalized training plan and weekly check-ins, I crossed that finish line with a huge smile! The gradual build-up approach made it feel achievable every step of the way."
+              rating={5}
+              imageSrc="/placeholder.svg?height=80&width=80&text=SM"
+            />
+            <TestimonialCard
+              name="David K."
+              achievement="Marathon PR - 3:45"
+              quote="After years of hitting a plateau around 4:10, the structured speed work and nutrition guidance helped me break through. Shaved 25 minutes off my marathon time and felt strong the entire race. The mental training techniques were game-changers!"
+              rating={5}
+              imageSrc="/placeholder.svg?height=80&width=80&text=DK"
+            />
+            <TestimonialCard
+              name="Emma R."
+              achievement="Return from Injury"
+              quote="Coming back from a stress fracture was scary, but the careful progression plan and focus on form helped me return stronger than ever. Now I'm running pain-free and just completed my first half marathon since the injury. So grateful for the patient, expert guidance!"
+              rating={5}
+              imageSrc="/placeholder.svg?height=80&width=80&text=ER"
+            />
+
+            {/* Show approved testimonials from database */}
+            {loading ? (
+              <div className="md:col-span-2 text-center p-8 duolingo-card">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-run-blue mx-auto"></div>
+                <p className="mt-6 text-gray-600 font-bold">Loading testimonials...</p>
+              </div>
+            ) : testimonials.length > 0 ? (
+              testimonials.map((testimonial) => (
+                <TestimonialCard
+                  key={testimonial.id}
+                  name={`${testimonial.first_name} ${testimonial.last_name}`}
+                  achievement={testimonial.achievement}
+                  quote={testimonial.comment}
+                  rating={testimonial.rating}
+                  imageSrc={testimonial.image_url}
+                  status={testimonial.status}
+                />
+              ))
+            ) : (
+              <div className="md:col-span-2 text-center p-8 duolingo-card">
+                <p className="text-gray-600 font-bold">No testimonials found.</p>
+              </div>
+            )}
+          </div>
+
+          <div className="text-center">
+            <Button variant="purple" size="lg" className="flex items-center gap-2" asChild>
+              <Link href="/custom-coaching">
+                Get personalized coaching
+                <ArrowRight className="h-5 w-5" />
+              </Link>
             </Button>
           </div>
-        )}
+        </div>
       </div>
+    </div>
+  )
+}
+
+function TestimonialCard({ name, achievement, quote, rating, imageSrc, isNew = false, status }) {
+  return (
+    <div className={`duolingo-card p-6 ${isNew ? "border-run-yellow border-4" : ""}`}>
+      {isNew && (
+        <div className="mb-4 -mt-2 -ml-2 px-4 py-2 bg-run-yellow text-run-dark text-sm font-bold rounded-br-xl rounded-tl-xl inline-block">
+          Your Story
+        </div>
+      )}
+      {status === "pending" && (
+        <div className="mb-4 float-right px-4 py-2 bg-gray-200 text-gray-700 text-sm font-bold rounded-xl">
+          Pending Review
+        </div>
+      )}
+      <div className="mb-6 flex items-center">
+        <div className="relative">
+          <img
+            src={imageSrc || "/placeholder.svg?height=80&width=80"}
+            alt={name}
+            className="h-16 w-16 rounded-full object-cover border-4 border-white shadow-lg"
+          />
+          <div className="absolute -bottom-1 -right-1 bg-white rounded-full p-1 shadow-md">
+            <div className="bg-run-blue text-white p-1 rounded-full">
+              <Star className="h-4 w-4 fill-white" />
+            </div>
+          </div>
+        </div>
+        <div className="ml-4">
+          <h3 className="text-xl font-extrabold text-run-dark">{name}</h3>
+          <p className="text-gray-600">{achievement}</p>
+          <div className="mt-2 flex">
+            {[...Array(rating)].map((_, i) => (
+              <Star key={i} className="h-4 w-4 fill-run-yellow text-run-yellow" />
+            ))}
+          </div>
+        </div>
+      </div>
+      <blockquote className="bg-gray-50 p-4 rounded-xl border-l-4 border-run-blue italic text-gray-600">
+        "{quote}"
+      </blockquote>
     </div>
   )
 }

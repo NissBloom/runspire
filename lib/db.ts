@@ -1,14 +1,8 @@
-// Do not call initializeDatabase() on boot; use /api/admin/init once per deploy.
-
 import { sql } from "@vercel/postgres"
 import { unstable_noStore as noStore } from "next/cache"
 
-// Environment checks
-const IS_PROD = process.env.NODE_ENV === "production"
-const ALLOW_DB_RESET = process.env.ALLOW_DB_RESET === "true"
-
-// Safe logging without exposing secrets
-console.log("DB: connection attempt")
+// Log database connection to verify we're connecting to the right database
+console.log("Connecting to database:", process.env.POSTGRES_DATABASE || "run_coach")
 
 export async function createTraineesTable() {
   try {
@@ -21,10 +15,10 @@ export async function createTraineesTable() {
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
     `
-    console.log("Ensured trainees table exists")
+    console.log("Created trainees table")
     return { success: true }
   } catch (error) {
-    console.error("Error ensuring trainees table:", error)
+    console.error("Error creating trainees table:", error)
     return { success: false, error }
   }
 }
@@ -44,18 +38,33 @@ export async function createTestimonialsTable() {
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
     `
-    console.log("Ensured testimonials table exists")
+    console.log("Created testimonials table")
     return { success: true }
   } catch (error) {
-    console.error("Error ensuring testimonials table:", error)
+    console.error("Error creating testimonials table:", error)
     return { success: false, error }
   }
 }
 
 export async function createTrainingPlansTable() {
   try {
+    // First check if the table exists and what columns it has
+    const tableInfo = await sql`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = 'training_plans' AND table_schema = 'public';
+    `
+
+    console.log(
+      "Existing training_plans columns:",
+      tableInfo.rows.map((row) => row.column_name),
+    )
+
+    // Drop and recreate the table to ensure correct schema
+    await sql`DROP TABLE IF EXISTS training_plans CASCADE;`
+
     await sql`
-      CREATE TABLE IF NOT EXISTS training_plans (
+      CREATE TABLE training_plans (
         id SERIAL PRIMARY KEY,
         user_id INTEGER REFERENCES trainees(id) ON DELETE CASCADE,
         goal TEXT NOT NULL,
@@ -69,12 +78,10 @@ export async function createTrainingPlansTable() {
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
     `
-    await sql`ALTER TABLE training_plans ADD COLUMN IF NOT EXISTS bundle TEXT;`
-    await sql`ALTER TABLE training_plans ADD COLUMN IF NOT EXISTS cta TEXT;`
-    console.log("Ensured training_plans table exists")
+    console.log("Created training_plans table with correct schema")
     return { success: true }
   } catch (error) {
-    console.error("Error ensuring training_plans table:", error)
+    console.error("Error creating training_plans table:", error)
     return { success: false, error }
   }
 }
@@ -93,21 +100,15 @@ export async function createCoachingRequestsTable() {
         status VARCHAR(255) DEFAULT 'pending'
       );
     `
-    console.log("Ensured coaching_requests table exists")
+    console.log("Created coaching_requests table")
     return { success: true }
   } catch (error) {
-    console.error("Error ensuring coaching_requests table:", error)
+    console.error("Error creating coaching_requests table:", error)
     return { success: false, error }
   }
 }
 
 export async function dropAllTables() {
-  // Only allow drops in non-production with explicit flag
-  if (IS_PROD || !ALLOW_DB_RESET) {
-    console.log("Drop tables blocked in production or ALLOW_DB_RESET not set")
-    return { success: false, error: "Drop tables not allowed in this environment" }
-  }
-
   try {
     // Drop tables in reverse order of dependencies
     await sql`DROP TABLE IF EXISTS coaching_requests CASCADE;`
@@ -123,38 +124,21 @@ export async function dropAllTables() {
 }
 
 export async function initializeDatabase() {
-  // Use advisory lock to prevent concurrent DDL
-  await sql`SELECT pg_advisory_lock(987654321);`
-
   try {
-    if (IS_PROD) {
-      // In production, only ensure tables exist (no drops)
-      console.log("DB: ensuring tables in production mode")
-      await createTraineesTable()
-      await createTestimonialsTable()
-      await createTrainingPlansTable()
-      await createCoachingRequestsTable()
-    } else {
-      // In non-production, allow reset if flag is set
-      if (ALLOW_DB_RESET) {
-        console.log("DB: resetting tables in development mode")
-        await dropAllTables()
-      }
+    // Drop all existing tables
+    await dropAllTables()
 
-      // Create all tables
-      await createTraineesTable()
-      await createTestimonialsTable()
-      await createTrainingPlansTable()
-      await createCoachingRequestsTable()
-    }
+    // Create all tables in correct order
+    await createTraineesTable()
+    await createTestimonialsTable()
+    await createTrainingPlansTable()
+    await createCoachingRequestsTable()
 
-    console.log("DB ensured")
+    console.log("Database initialized successfully")
     return { success: true }
   } catch (error) {
     console.error("Error initializing database:", error)
     return { success: false, error }
-  } finally {
-    await sql`SELECT pg_advisory_unlock(987654321);`
   }
 }
 
@@ -288,16 +272,16 @@ export async function getTrainingPlans() {
 export async function verifyDatabaseConnection() {
   try {
     const result = await sql`SELECT current_database() as database_name;`
-    console.log("DB: connection verified")
+    console.log("Successfully connected to database:", result.rows[0].database_name)
     return {
       success: true,
-      database: "connected",
+      database: result.rows[0].database_name,
     }
   } catch (error) {
-    console.error("DB: connection error")
+    console.error("Database connection error:", error)
     return {
       success: false,
-      error: "Connection failed",
+      error: error.message,
     }
   }
 }
