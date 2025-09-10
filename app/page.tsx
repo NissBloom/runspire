@@ -1,10 +1,14 @@
 import Link from "next/link"
 import { BookOpen, Star, Calendar, Users, Award, ChevronRight, CheckCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { TestimonialsPreloader } from "@/components/testimonials-preloader"
 
 export default function Home() {
   return (
     <div className="bg-[#F7F7F7] min-h-screen">
+      {/* Add the preloader component */}
+      <TestimonialsPreloader />
+
       {/* Hero Section */}
       <section className="pt-16 pb-24 bg-gradient-to-b from-white to-[#F7F7F7]">
         <div className="container mx-auto px-4">

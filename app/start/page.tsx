@@ -10,13 +10,16 @@ import { Label } from "@/components/ui/label"
 import { Slider } from "@/components/ui/slider"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ChevronLeft, Calendar, MessageCircle } from "lucide-react"
+import { ChevronLeft, Calendar, MessageCircle, Info } from "lucide-react"
 import { saveInitialPlanData, updatePlanCta } from "@/app/plan-builder/actions"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 
 export default function GetStartedPage() {
   const router = useRouter()
   const [step, setStep] = useState(1)
   const [planId, setPlanId] = useState("")
+  const [showPackageDialog, setShowPackageDialog] = useState(false)
+  const [selectedPackageForDetails, setSelectedPackageForDetails] = useState("")
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -106,6 +109,11 @@ export default function GetStartedPage() {
         router.push(url)
       }
     }
+  }
+
+  const handleSeeDetails = (packageType: string) => {
+    setSelectedPackageForDetails(packageType)
+    setShowPackageDialog(true)
   }
 
   const isIntermediateOrAdvanced = formData.experience === "intermediate" || formData.experience === "advanced"
@@ -350,11 +358,15 @@ export default function GetStartedPage() {
                       <p className="text-gray-600 mb-4">
                         Perfect for runners who want structure without heavy check-ins
                       </p>
-                      <ul className="text-gray-700 space-y-2 mb-4">
-                        <li>• Personalized training plan tailored to your goals & schedule</li>
-                        <li>• Monthly 20-minute call for plan updates and adjustments</li>
-                        <li>• Weekly WhatsApp/email communication to review progress and stay on track</li>
-                      </ul>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleSeeDetails("base")}
+                        className="w-full bg-transparent border-green-600 text-green-700 hover:bg-green-100"
+                      >
+                        <Info className="mr-2 h-4 w-4" />
+                        See Details
+                      </Button>
                     </div>
 
                     <div className="rounded-lg border-2 border-blue-500 bg-blue-50 p-6">
@@ -363,13 +375,15 @@ export default function GetStartedPage() {
                         <span className="text-xl font-bold">₪350/month</span>
                       </div>
                       <p className="text-gray-600 mb-4">Ideal for runners who want close guidance and accountability</p>
-                      <ul className="text-gray-700 space-y-2 mb-4">
-                        <li>• Everything in Base, plus:</li>
-                        <li>• 20-minute calls every 2 weeks for ongoing support</li>
-                        <li>• Full post-workout analysis (pace, HR, effort, Strava/Garmin uploads)</li>
-                        <li>• Weekly training plan adjustments based on your latest data</li>
-                        <li>• Frequent communication for motivation, accountability, and quick answers</li>
-                      </ul>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleSeeDetails("performance")}
+                        className="w-full bg-transparent border-blue-600 text-blue-700 hover:bg-blue-100"
+                      >
+                        <Info className="mr-2 h-4 w-4" />
+                        See Details
+                      </Button>
                     </div>
                   </div>
 
@@ -390,7 +404,8 @@ export default function GetStartedPage() {
                     <div className="space-y-3">
                       <Button className="w-full" size="lg" onClick={() => handleCtaClick("book_consult", "/book")}>
                         <Calendar className="mr-2 h-5 w-5" />
-                        Book Free Consult to Discuss Coaching Package
+                        <span className="hidden sm:inline">Book Free Consult to Discuss Coaching Package</span>
+                        <span className="sm:hidden">Book Free Consultation</span>
                       </Button>
 
                       <div className="text-center">
@@ -424,6 +439,78 @@ export default function GetStartedPage() {
           </Card>
         </div>
       </div>
+
+      {/* Package Details Dialog */}
+      <Dialog open={showPackageDialog} onOpenChange={setShowPackageDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {selectedPackageForDetails === "base" ? (
+                <>
+                  <span className="text-green-700">🟢 Base Package</span>
+                  <span className="text-xl font-bold">₪200/month</span>
+                </>
+              ) : (
+                <>
+                  <span className="text-blue-700">🔵 Performance Package</span>
+                  <span className="text-xl font-bold">₪350/month</span>
+                </>
+              )}
+            </DialogTitle>
+            <DialogDescription>
+              {selectedPackageForDetails === "base"
+                ? "Perfect for runners who want structure without heavy check-ins"
+                : "Ideal for runners who want close guidance and accountability"}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-4">
+            {selectedPackageForDetails === "base" ? (
+              <ul className="space-y-3 text-gray-700">
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">•</span>
+                  <span>Personalized training plan tailored to your goals & schedule</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">•</span>
+                  <span>Monthly 20-minute call for plan updates and adjustments</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">•</span>
+                  <span>Weekly WhatsApp/email communication to review progress and stay on track</span>
+                </li>
+              </ul>
+            ) : (
+              <ul className="space-y-3 text-gray-700">
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-600 mt-1">•</span>
+                  <span>Everything in Base, plus:</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-600 mt-1">•</span>
+                  <span>20-minute calls every 2 weeks for ongoing support</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-600 mt-1">•</span>
+                  <span>Full post-workout analysis (pace, HR, effort, Strava/Garmin uploads)</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-600 mt-1">•</span>
+                  <span>Weekly training plan adjustments based on your latest data</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-600 mt-1">•</span>
+                  <span>Frequent communication for motivation, accountability, and quick answers</span>
+                </li>
+              </ul>
+            )}
+
+            <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+              <p className="text-sm text-gray-600 text-center">📌 All packages require a minimum 2-month commitment.</p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

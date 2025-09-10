@@ -11,11 +11,10 @@ import { Star, ArrowRight, CheckCircle2, MessageSquare } from "lucide-react"
 import { submitTestimonial } from "./actions"
 
 export default function TestimonialsPage() {
-  // Remove the useTestimonials import - we'll use direct API calls
   const [testimonials, setTestimonials] = useState([])
   const [loading, setLoading] = useState(true)
-  const [loadingAll, setLoadingAll] = useState(false)
-  const [showingAll, setShowingAll] = useState(false)
+  const [loadingRest, setLoadingRest] = useState(false)
+  const [allLoaded, setAllLoaded] = useState(false)
 
   const [formData, setFormData] = useState({
     firstName: "",
@@ -34,16 +33,36 @@ export default function TestimonialsPage() {
   const [error, setError] = useState("")
   const [newTestimonial, setNewTestimonial] = useState(null)
 
-  // Load user email from localStorage and fetch initial testimonials
+  // Load user email from localStorage and fetch testimonials
   useEffect(() => {
     const userEmail = localStorage.getItem("userEmail")
     if (userEmail) {
       setFormData((prev) => ({ ...prev, email: userEmail }))
     }
 
-    // Fetch initial testimonials preview
-    fetchTestimonialsPreview()
+    // Load testimonials with preloading logic
+    loadTestimonials()
   }, [])
+
+  // Auto-load rest of testimonials when page is clicked/interacted with
+  useEffect(() => {
+    const handlePageInteraction = () => {
+      if (!allLoaded && !loadingRest) {
+        loadRemainingTestimonials()
+      }
+    }
+
+    // Add event listeners for user interaction
+    document.addEventListener("click", handlePageInteraction, { once: true })
+    document.addEventListener("scroll", handlePageInteraction, { once: true })
+    document.addEventListener("keydown", handlePageInteraction, { once: true })
+
+    return () => {
+      document.removeEventListener("click", handlePageInteraction)
+      document.removeEventListener("scroll", handlePageInteraction)
+      document.removeEventListener("keydown", handlePageInteraction)
+    }
+  }, [allLoaded, loadingRest])
 
   // Auto-hide success message after 3 seconds
   useEffect(() => {
@@ -67,6 +86,69 @@ export default function TestimonialsPage() {
     }
     return () => clearTimeout(timer)
   }, [submitted])
+
+  const loadTestimonials = async () => {
+    try {
+      setLoading(true)
+
+      // First, try to get preloaded testimonials from sessionStorage
+      const cached = sessionStorage.getItem("preloaded-testimonials")
+      if (cached) {
+        const { testimonials: preloadedTestimonials, timestamp } = JSON.parse(cached)
+
+        // Use cached data if it's less than 5 minutes old
+        if (Date.now() - timestamp < 5 * 60 * 1000) {
+          console.log("Using preloaded testimonials")
+          setTestimonials(preloadedTestimonials)
+          setLoading(false)
+
+          // Auto-load the rest after showing the first 5
+          setTimeout(() => {
+            loadRemainingTestimonials()
+          }, 500)
+          return
+        }
+      }
+
+      // Fallback: fetch testimonials normally
+      console.log("Fetching testimonials (no preload available)")
+      const response = await fetch("/api/testimonials?preview=true")
+      const data = await response.json()
+      setTestimonials(data.testimonials || [])
+
+      // Auto-load the rest
+      setTimeout(() => {
+        loadRemainingTestimonials()
+      }, 500)
+    } catch (error) {
+      console.error("Error loading testimonials:", error)
+      setTestimonials([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const loadRemainingTestimonials = async () => {
+    if (allLoaded || loadingRest) return
+
+    try {
+      setLoadingRest(true)
+      console.log("Auto-loading remaining testimonials...")
+
+      const response = await fetch("/api/testimonials")
+      const data = await response.json()
+
+      if (data.success && data.testimonials) {
+        setTestimonials(data.testimonials)
+        setAllLoaded(true)
+        console.log(`Loaded all ${data.testimonials.length} testimonials`)
+      }
+    } catch (error) {
+      console.error("Error loading remaining testimonials:", error)
+    } finally {
+      setLoadingRest(false)
+    }
+  }
 
   const handleChange = (e) => {
     const { id, value } = e.target
@@ -122,11 +204,9 @@ export default function TestimonialsPage() {
         }
 
         // Refresh the testimonials list to include the new one
-        if (showingAll) {
-          await fetchAllTestimonials()
-        } else {
-          await fetchTestimonialsPreview()
-        }
+        // Clear cache and reload
+        sessionStorage.removeItem("preloaded-testimonials")
+        await loadTestimonials()
       } else {
         setError(result.message || "Something went wrong. Please try again.")
       }
@@ -143,35 +223,6 @@ export default function TestimonialsPage() {
     if (!firstName) return "Anonymous"
     if (!lastName) return firstName
     return `${firstName} ${lastName.charAt(0).toUpperCase()}.`
-  }
-
-  // Add these functions after the useState declarations
-  const fetchTestimonialsPreview = async () => {
-    try {
-      setLoading(true)
-      const response = await fetch("/api/testimonials?preview=true")
-      const data = await response.json()
-      setTestimonials(data.testimonials || [])
-    } catch (error) {
-      console.error("Error fetching preview testimonials:", error)
-      setTestimonials([])
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const fetchAllTestimonials = async () => {
-    try {
-      setLoadingAll(true)
-      const response = await fetch("/api/testimonials")
-      const data = await response.json()
-      setTestimonials(data.testimonials || [])
-      setShowingAll(true)
-    } catch (error) {
-      console.error("Error fetching all testimonials:", error)
-    } finally {
-      setLoadingAll(false)
-    }
   }
 
   return (
@@ -401,30 +452,7 @@ export default function TestimonialsPage() {
               </div>
             )}
 
-            {/* Demo testimonials - temporary examples */}
-            <TestimonialCard
-              name="Sarah M."
-              achievement="First 5K Completion"
-              quote="I never thought I could run a full 5K without stopping, but with the personalized training plan and weekly check-ins, I crossed that finish line with a huge smile! The gradual build-up approach made it feel achievable every step of the way."
-              rating={5}
-              imageSrc="/placeholder.svg?height=80&width=80&text=SM"
-            />
-            <TestimonialCard
-              name="David K."
-              achievement="Marathon PR - 3:45"
-              quote="After years of hitting a plateau around 4:10, the structured speed work and nutrition guidance helped me break through. Shaved 25 minutes off my marathon time and felt strong the entire race. The mental training techniques were game-changers!"
-              rating={5}
-              imageSrc="/placeholder.svg?height=80&width=80&text=DK"
-            />
-            <TestimonialCard
-              name="Emma R."
-              achievement="Return from Injury"
-              quote="Coming back from a stress fracture was scary, but the careful progression plan and focus on form helped me return stronger than ever. Now I'm running pain-free and just completed my first half marathon since the injury. So grateful for the patient, expert guidance!"
-              rating={5}
-              imageSrc="/placeholder.svg?height=80&width=80&text=ER"
-            />
-
-            {/* Show approved testimonials from database */}
+            {/* Show testimonials */}
             {loading ? (
               <div className="md:col-span-2 text-center p-8 duolingo-card">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-run-blue mx-auto"></div>
@@ -449,17 +477,13 @@ export default function TestimonialsPage() {
             )}
           </div>
 
-          {!showingAll && !loading && testimonials.length >= 5 && (
+          {/* Loading indicator for remaining testimonials */}
+          {loadingRest && (
             <div className="text-center mb-12">
-              <Button
-                variant="outline"
-                size="lg"
-                onClick={fetchAllTestimonials}
-                disabled={loadingAll}
-                className="border-2 border-run-blue text-run-blue hover:bg-run-blue hover:text-white bg-transparent"
-              >
-                {loadingAll ? "Loading..." : "View All Success Stories"}
-              </Button>
+              <div className="inline-flex items-center gap-2 text-gray-600">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-run-blue"></div>
+                <span className="text-sm">Loading more success stories...</span>
+              </div>
             </div>
           )}
 
