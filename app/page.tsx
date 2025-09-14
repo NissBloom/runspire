@@ -14,7 +14,7 @@ export default function Home() {
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row items-center gap-12">
             <div className="md:w-1/2">
-              <h1 className="font-extrabold mb-6 text-run-dark leading-tight text-4xl">
+              <h1 className="font-extrabold mb-6 text-run-dark leading-tight text-5xl">
                 Train smarter. Run stronger. Live better.
               </h1>
               <p className="text-xl mb-8 text-gray-600">
