@@ -332,7 +332,7 @@ export default function GetStartedPage() {
                 <div className="space-y-6">
                   <div className="flex items-center justify-between">
                     <h2 className="text-2xl font-bold">Your Coaching Options</h2>
-                    <span className="text-sm text-red-600 font-bold">🔥 Opening Deal – Don't Miss Out</span>
+                    <span className="text-sm text-red-600 font-bold">🔥 Opening Deals – Don't Miss Out</span>
                   </div>
 
                   <p className="text-gray-600 mb-6">

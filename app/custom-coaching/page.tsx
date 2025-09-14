@@ -112,7 +112,7 @@ export default function CustomCoachingPage() {
             <div className="mt-8 rounded-lg bg-white p-6 shadow-md">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-xl font-bold">Coaching Packages</h3>
-                <span className="text-sm text-red-600 font-bold">🔥 Opening Deal – Don't Miss Out</span>
+                <span className="text-sm text-red-600 font-bold">🔥 Opening Deals – Don't Miss Out</span>
               </div>
 
               <div className="space-y-4">
