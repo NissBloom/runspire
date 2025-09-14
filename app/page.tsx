@@ -14,12 +14,11 @@ export default function Home() {
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row items-center gap-12">
             <div className="md:w-1/2">
-              <h1 className="text-5xl md:text-6xl font-extrabold mb-6 text-run-dark leading-tight">
+              <h1 className="font-extrabold mb-6 text-run-dark leading-tight text-4xl">
                 Train smarter. Run stronger. Live better.
               </h1>
               <p className="text-xl mb-8 text-gray-600">
-                I’m here to coach you - guiding you every step, with tailored support that makes running simple,
-                sustainable, and fun. From your first 5K to chasing sub-3 marathons.
+                I’m here to coach you - helping you achieve your running goals with simple, sustainable, and fun training, from your first 5K to chasing sub-3 marathons.”
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link href="/start">

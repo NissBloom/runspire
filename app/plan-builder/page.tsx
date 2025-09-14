@@ -148,13 +148,13 @@ export default function PlanBuilderPage() {
                       <GoalOption
                         value="half"
                         title="Half Marathon"
-                        description="Prepare for 13.1 Kms"
+                        description="Prepare for 21.1 km"
                         checked={formData.goal === "half"}
                       />
                       <GoalOption
                         value="full"
                         title="Marathon"
-                        description="Get ready for 26.2 Kms"
+                        description="Get ready for 42.2 km"
                         checked={formData.goal === "full"}
                       />
                     </div>
@@ -212,7 +212,7 @@ export default function PlanBuilderPage() {
                   </div>
 
                   <div className="space-y-4">
-                    <Label>Current weekly distance (Kms)</Label>
+                    <Label>Current weekly distance (km)</Label>
                     <div className="flex items-center gap-4">
                       <Slider
                         defaultValue={[formData.currentMileage]}
@@ -359,7 +359,7 @@ export default function PlanBuilderPage() {
                     </div>
 
                     <p className="mb-4">
-                      This plan is customized based on your current {formData.currentMileage} Kms per week and will
+                      This plan is customized based on your current {formData.currentMileage} km per week and will
                       gradually build your endurance and speed to help you reach your goal.
                     </p>
 
