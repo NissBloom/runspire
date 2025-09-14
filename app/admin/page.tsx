@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+
 import { useState, useEffect } from "react"
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -52,6 +54,10 @@ interface Plan {
 }
 
 export default function AdminPage() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [loginForm, setLoginForm] = useState({ username: "", password: "" })
+  const [loginError, setLoginError] = useState("")
+  const [showLogin, setShowLogin] = useState(true)
   const [connectionStatus, setConnectionStatus] = useState({ success: false, database: "", error: "" })
   const [requests, setRequests] = useState<Request[]>([])
   const [plans, setPlans] = useState<Plan[]>([])
@@ -66,6 +72,35 @@ export default function AdminPage() {
     achievement: "",
     comment: "",
   })
+
+  // Check if already logged in on component mount
+  useEffect(() => {
+    const savedLogin = localStorage.getItem("admin-logged-in")
+    if (savedLogin === "true") {
+      setIsLoggedIn(true)
+      setShowLogin(false)
+    }
+  }, [])
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoginError("")
+
+    // Simple authentication - you can change these credentials
+    if (loginForm.username === "admin" && loginForm.password === "runspire2024") {
+      setIsLoggedIn(true)
+      setShowLogin(false)
+      localStorage.setItem("admin-logged-in", "true")
+    } else {
+      setLoginError("Invalid username or password")
+    }
+  }
+
+  const handleLogout = () => {
+    setIsLoggedIn(false)
+    setShowLogin(true)
+    localStorage.removeItem("admin-logged-in")
+  }
 
   useEffect(() => {
     async function fetchData() {
@@ -138,8 +173,10 @@ export default function AdminPage() {
       }
     }
 
-    fetchData()
-  }, [])
+    if (isLoggedIn) {
+      fetchData()
+    }
+  }, [isLoggedIn])
 
   const handleViewTestimonial = (testimonial: Testimonial) => {
     setSelectedTestimonial(testimonial)
@@ -209,12 +246,49 @@ export default function AdminPage() {
     }
   }
 
-  if (loading) {
+  if (showLogin && !isLoggedIn) {
     return (
-      <div className="container mx-auto py-12 px-4">
-        <h1 className="text-3xl font-bold mb-8">Admin Dashboard</h1>
-        <div className="flex justify-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="max-w-md w-full space-y-8">
+          <div>
+            <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">Admin Login</h2>
+            <p className="mt-2 text-center text-sm text-gray-600">Access the Runspire admin dashboard</p>
+          </div>
+          <form className="mt-8 space-y-6" onSubmit={handleLogin}>
+            <div className="rounded-md shadow-sm -space-y-px">
+              <div>
+                <Input
+                  type="text"
+                  required
+                  value={loginForm.username}
+                  onChange={(e) => setLoginForm({ ...loginForm, username: e.target.value })}
+                  placeholder="Username"
+                  className="rounded-t-md"
+                />
+              </div>
+              <div>
+                <Input
+                  type="password"
+                  required
+                  value={loginForm.password}
+                  onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
+                  placeholder="Password"
+                  className="rounded-b-md"
+                />
+              </div>
+            </div>
+
+            {loginError && <div className="text-red-600 text-sm text-center">{loginError}</div>}
+
+            <div>
+              <Button
+                type="submit"
+                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                Sign in
+              </Button>
+            </div>
+          </form>
         </div>
       </div>
     )
@@ -222,7 +296,16 @@ export default function AdminPage() {
 
   return (
     <div className="container mx-auto py-12 px-4">
-      <h1 className="text-3xl font-bold mb-8">Admin Dashboard</h1>
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+        <Button
+          variant="outline"
+          onClick={handleLogout}
+          className="text-red-600 border-red-600 hover:bg-red-50 bg-transparent"
+        >
+          Logout
+        </Button>
+      </div>
 
       <div className="mb-8 p-4 rounded-lg border">
         <h2 className="text-xl font-semibold mb-4">Database Connection Status</h2>
