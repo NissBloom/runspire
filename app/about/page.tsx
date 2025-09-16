@@ -23,7 +23,7 @@ export default function AboutPage() {
             <div className="md:flex">
               <div className="md:w-1/3 bg-run-blue p-8 flex justify-center items-center">
                 <img
-                  src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/WhatsApp%20Image%202025-09-04%20at%2012.16.48_d511d22b.jpg-1guJNhapqBQzq37FQOSocdkyzzqq07.jpeg"
+                  src="/images/coach-profile.jpg"
                   alt="Coach portrait"
                   className="rounded-full border-4 border-white shadow-lg h-64 w-64 object-cover"
                 />
