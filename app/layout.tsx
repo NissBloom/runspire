@@ -5,6 +5,7 @@ import { Header } from "@/components/header"
 import { TestimonialsProvider } from "./providers/testimonials-provider"
 import { FloatingCalendlyButton } from "@/components/floating-calendly-button"
 import { AnalyticsProvider } from "@/components/analytics-provider"
+import { SpeedInsights } from "@vercel/speed-insights/next"
 import { Suspense } from "react"
 
 const nunito = Nunito({
@@ -33,6 +34,7 @@ export default function RootLayout({
               <Header />
               {children}
               <FloatingCalendlyButton />
+              <SpeedInsights />
             </TestimonialsProvider>
           </AnalyticsProvider>
         </Suspense>
