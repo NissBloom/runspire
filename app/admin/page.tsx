@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { Star } from "lucide-react"
+import { Star, Edit, Trash2 } from "lucide-react"
 import { approveTestimonial, rejectTestimonial, updateTestimonial } from "./actions"
 import { getPackageById } from "@/lib/data"
 
@@ -246,6 +246,24 @@ export default function AdminPage() {
     }
   }
 
+  const handleEditPlan = (plan: Plan) => {
+    // TODO: Implement edit functionality
+    console.log("Edit plan:", plan)
+  }
+
+  const handleDeletePlan = async (planId: number) => {
+    if (confirm("Are you sure you want to delete this training plan?")) {
+      try {
+        // TODO: Implement delete API call
+        console.log("Delete plan:", planId)
+        // For now, just remove from local state
+        setPlans(plans.filter((p) => p.id !== planId))
+      } catch (error) {
+        console.error("Error deleting plan:", error)
+      }
+    }
+  }
+
   if (showLogin && !isLoggedIn) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -390,6 +408,7 @@ export default function AdminPage() {
                     <TableHead>Bundle</TableHead>
                     <TableHead>CTA</TableHead>
                     <TableHead>Date</TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -453,6 +472,26 @@ export default function AdminPage() {
                         )}
                       </TableCell>
                       <TableCell>{new Date(plan.created_at).toLocaleDateString()}</TableCell>
+                      <TableCell>
+                        <div className="flex space-x-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleEditPlan(plan)}
+                            className="text-blue-600 border-blue-600 hover:bg-blue-50"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleDeletePlan(plan.id)}
+                            className="text-red-600 border-red-600 hover:bg-red-50"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
