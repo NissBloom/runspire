@@ -78,10 +78,34 @@ export function PlanBuilderForm() {
     setSuccess(false)
 
     try {
+      // Map formData to API payload with correct field names
+      const payload = {
+        name: formData.plan_name,
+        race_date: formData.race_date,
+        start_date: formData.start_date,
+        number_of_runs_per_week: parseInt(formData.number_of_runs_per_week),
+        current_weekly_kms: parseFloat(formData.current_weekly_kms),
+        most_recent_long_run: parseFloat(formData.most_recent_long_run),
+        recent_injury: formData.recent_injury,
+        goal_race: formData.goal_race,
+        goal_date: formData.goal_date,
+        recent_race_effort: formData.recent_race_effort,
+        max_hr: formData.max_hr ? parseInt(formData.max_hr) : null,
+        life_events: formData.life_events,
+        starting_long_run_distance: parseFloat(formData.starting_long_run_distance),
+        max_weekly_mileage: parseFloat(formData.max_weekly_mileage),
+        recovery_week_interval: formData.recovery_week_interval ? parseInt(formData.recovery_week_interval) : 4,
+        recovery_factor: formData.recovery_factor ? parseFloat(formData.recovery_factor) : 0.8,
+        long_run_cap: formData.long_run_cap ? parseFloat(formData.long_run_cap) : 42,
+        percentage_tiers: formData.percentage_tiers
+      }
+
+      console.log("[v0] Submitting payload:", JSON.stringify(payload, null, 2));
+      
       const response = await fetch('/api/admin/create-plan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(payload)
       })
 
       const data = await response.json()
