@@ -1,7 +1,7 @@
 // Email utility functions for the run coaching website
 import { Resend } from "resend"
 
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "nissbloom@gmail.com"
+const ADMIN_EMAIL = "nissbloom@gmail.com"
 const RESEND_API_KEY = process.env.RESEND_API_KEY
 
 // Initialize Resend client
@@ -27,9 +27,10 @@ export async function sendEmail(options: EmailOptions): Promise<{ success: boole
       }
     }
 
+    // Override to address - always send to admin email during sandbox/testing
     const response = await resend.emails.send({
       from: options.from || "Runspire <onboarding@resend.dev>",
-      to: options.to,
+      to: ADMIN_EMAIL,
       subject: options.subject,
       html: options.html,
     })
@@ -44,7 +45,7 @@ export async function sendEmail(options: EmailOptions): Promise<{ success: boole
 
     console.log("Email sent successfully:", {
       id: response.data?.id,
-      to: options.to,
+      to: ADMIN_EMAIL,
       subject: options.subject,
     })
 
