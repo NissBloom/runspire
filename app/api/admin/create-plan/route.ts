@@ -76,10 +76,12 @@ export async function POST(req: Request) {
 
     const planId = planResult.rows[0].id;
 
-    // Create inputs record
+    // Create inputs record - handle empty strings as NULL for optional fields
+    const goalDateValue = goal_date && goal_date.trim() ? goal_date : null;
+    
     await sql`
       INSERT INTO training_plan_inputs (plan_id, number_of_runs_per_week, current_weekly_kms, most_recent_long_run, recent_injury, goal_race, goal_date, recent_race_effort, max_hr, life_events, created_at)
-      VALUES (${planId}, ${number_of_runs_per_week}, ${current_weekly_kms}, ${most_recent_long_run}, ${recent_injury}, ${goal_race}, ${goal_date}, ${recent_race_effort}, ${max_hr}, ${life_events}, NOW())
+      VALUES (${planId}, ${number_of_runs_per_week}, ${current_weekly_kms}, ${most_recent_long_run}, ${recent_injury || null}, ${goal_race}, ${goalDateValue}, ${recent_race_effort}, ${max_hr}, ${life_events || null}, NOW())
     `;
 
     // Create outputs record
