@@ -47,7 +47,7 @@ CREATE TABLE training_plan_outputs (
   interval_run_per_week DECIMAL(5, 2) DEFAULT 0.5,
   weeks_till_goal INTEGER,
   recovery_weeks INTEGER,
-  taper VARCHAR(50),
+  taper INTEGER,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -62,7 +62,7 @@ CREATE TABLE plan_weeks (
   interval_run_distance DECIMAL(10, 2),
   aerobic_distance DECIMAL(10, 2),
   extra_distance DECIMAL(10, 2),
-  easy_run_distance DECIMAL(10, 2),
+  easy_distance DECIMAL(10, 2),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
   UNIQUE(plan_id, week_number)
 );
