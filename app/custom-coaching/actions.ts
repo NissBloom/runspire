@@ -9,6 +9,9 @@ import {
   createTraineesTable,
   createCoachingRequestsTable,
 } from "@/lib/db"
+import { sendEmail, generateCoachingRequestEmail, generateAdminCoachingRequestNotification } from "@/lib/email"
+
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "admin@runspire.com"
 
 export async function submitCoachingRequest(formData: FormData) {
   try {
@@ -66,6 +69,34 @@ export async function submitCoachingRequest(formData: FormData) {
     `
 
     console.log("Successfully inserted coaching request for user:", userResult.userId)
+
+    // Send confirmation email to user
+    await sendEmail({
+      to: email,
+      subject: "Coaching Request Submitted - Runspire",
+      html: generateCoachingRequestEmail({
+        firstName,
+        lastName,
+        email,
+        package: packageType,
+        goal: goalString,
+        experience: experienceString || "beginner",
+      }),
+    })
+
+    // Send notification email to admin
+    await sendEmail({
+      to: ADMIN_EMAIL,
+      subject: "Coaching Request Submitted",
+      html: generateAdminCoachingRequestNotification({
+        firstName,
+        lastName,
+        email,
+        package: packageType,
+        goal: goalString,
+        experience: experienceString || "beginner",
+      }),
+    })
 
     // Revalidate the page to show fresh data
     revalidatePath("/custom-coaching")

@@ -3,6 +3,15 @@
 import { sql } from "@vercel/postgres"
 import { revalidatePath } from "next/cache"
 import { createOrGetUser, createTraineesTable, createTrainingPlansTable } from "@/lib/db"
+import {
+  sendEmail,
+  generateTrainingPlanInitialEmail,
+  generateTrainingPlanCompleteEmail,
+  generateAdminTrainingPlanInitialNotification,
+  generateAdminTrainingPlanCompleteNotification,
+} from "@/lib/email"
+
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "admin@runspire.com"
 
 export async function saveTrainingPlan(formData: FormData) {
   try {
@@ -83,6 +92,42 @@ export async function saveTrainingPlan(formData: FormData) {
     const planId = result.rows[0].id
 
     console.log("Successfully saved training plan with ID:", planId, "for user:", userResult.userId)
+
+    // Send confirmation email to user
+    await sendEmail({
+      to: email,
+      subject: "Your Training Plan is Complete - Runspire",
+      html: generateTrainingPlanCompleteEmail({
+        firstName,
+        lastName,
+        email,
+        goal,
+        experience,
+        daysPerWeek,
+        currentMileage,
+        raceDistance: raceDistance || undefined,
+        personalBest: personalBest || undefined,
+        bundle,
+      }),
+    })
+
+    // Send notification email to admin
+    await sendEmail({
+      to: ADMIN_EMAIL,
+      subject: "New Training Plan Completed",
+      html: generateAdminTrainingPlanCompleteNotification({
+        firstName,
+        lastName,
+        email,
+        goal,
+        experience,
+        daysPerWeek,
+        currentMileage,
+        raceDistance: raceDistance || undefined,
+        personalBest: personalBest || undefined,
+        bundle,
+      }),
+    })
 
     // Revalidate the page to show fresh data
     revalidatePath("/plan-builder")
@@ -234,6 +279,28 @@ export async function saveInitialPlanData(formData: FormData) {
     const planId = result.rows[0].id
 
     console.log("Successfully saved initial training plan data with ID:", planId, "for user:", userResult.userId)
+
+    // Send confirmation email to user
+    await sendEmail({
+      to: trimmedEmail,
+      subject: "Training Plan Started - Runspire",
+      html: generateTrainingPlanInitialEmail({
+        firstName: trimmedFirstName,
+        lastName: trimmedLastName,
+        email: trimmedEmail,
+      }),
+    })
+
+    // Send notification email to admin
+    await sendEmail({
+      to: ADMIN_EMAIL,
+      subject: "Training Plan Started",
+      html: generateAdminTrainingPlanInitialNotification({
+        firstName: trimmedFirstName,
+        lastName: trimmedLastName,
+        email: trimmedEmail,
+      }),
+    })
 
     return {
       success: true,
