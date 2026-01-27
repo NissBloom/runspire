@@ -1,6 +1,11 @@
 // Email utility functions for the run coaching website
+import { Resend } from "resend"
 
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "admin@runspire.com"
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "nissbloom@gmail.com"
+const RESEND_API_KEY = process.env.RESEND_API_KEY
+
+// Initialize Resend client
+const resend = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null
 
 interface EmailOptions {
   to: string
@@ -11,21 +16,37 @@ interface EmailOptions {
 
 export async function sendEmail(options: EmailOptions): Promise<{ success: boolean; message: string }> {
   try {
-    // In a real implementation, you would integrate with an email service like:
-    // - Resend
-    // - SendGrid
-    // - Nodemailer with SMTP
-    // - AWS SES
+    if (!resend) {
+      console.warn("Resend not configured. Email not sent:", {
+        to: options.to,
+        subject: options.subject,
+      })
+      return {
+        success: false,
+        message: "Email service not configured",
+      }
+    }
 
-    console.log("Email would be sent:", {
+    const response = await resend.emails.send({
+      from: options.from || "Runspire <onboarding@resend.dev>",
       to: options.to,
       subject: options.subject,
-      from: options.from || "noreply@runspire.com",
       html: options.html,
     })
 
-    // Simulate async operation
-    await new Promise((resolve) => setTimeout(resolve, 100))
+    if (response.error) {
+      console.error("Resend error:", response.error)
+      return {
+        success: false,
+        message: "Failed to send email",
+      }
+    }
+
+    console.log("Email sent successfully:", {
+      id: response.data?.id,
+      to: options.to,
+      subject: options.subject,
+    })
 
     return {
       success: true,
