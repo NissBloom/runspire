@@ -306,3 +306,48 @@ export function generateAdminTestimonialNotification(data: {
     </html>
   `
 }
+
+export function generateAdminCtaClickNotification(data: {
+  firstName: string
+  lastName: string
+  email: string
+  ctaClicked: string
+  goal?: string
+}): string {
+  const ctaLabels: Record<string, string> = {
+    "book_consult": "Book Free Consultation",
+    "whatsapp": "WhatsApp Contact",
+    "request_plan": "Request Training Plan",
+  }
+
+  const ctaLabel = ctaLabels[data.ctaClicked] || data.ctaClicked
+
+  return `
+    <html>
+      <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+        <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+          <h1 style="color: #dc2626;">CTA Action Taken</h1>
+          <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+            <tr style="background-color: #f0f0f0;">
+              <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">Name</td>
+              <td style="padding: 10px; border: 1px solid #ddd;">${data.firstName} ${data.lastName}</td>
+            </tr>
+            <tr>
+              <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">Email</td>
+              <td style="padding: 10px; border: 1px solid #ddd;">${data.email}</td>
+            </tr>
+            <tr style="background-color: #f0f0f0;">
+              <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">CTA Clicked</td>
+              <td style="padding: 10px; border: 1px solid #ddd;">${ctaLabel}</td>
+            </tr>
+            ${data.goal ? `<tr>
+              <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">Running Goal</td>
+              <td style="padding: 10px; border: 1px solid #ddd; text-transform: uppercase;">${data.goal}</td>
+            </tr>` : ""}
+          </table>
+          <p>Follow up with this lead immediately!</p>
+        </div>
+      </body>
+    </html>
+  `
+}
