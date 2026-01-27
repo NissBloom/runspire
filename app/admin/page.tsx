@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Star, Edit, Trash2 } from "lucide-react"
 import { approveTestimonial, rejectTestimonial, updateTestimonial } from "./actions"
 import { getPackageById } from "@/lib/data"
+import { PlanBuilderForm } from "./plan-builder-form"
 
 interface Testimonial {
   id: number
@@ -344,6 +345,7 @@ export default function AdminPage() {
         <TabsList className="mb-6">
           <TabsTrigger value="coaching">Coaching Requests</TabsTrigger>
           <TabsTrigger value="plans">Training Plans</TabsTrigger>
+          <TabsTrigger value="plan-builder">Plan Builder</TabsTrigger>
           <TabsTrigger value="testimonials">Testimonials ({testimonials.length})</TabsTrigger>
         </TabsList>
 
@@ -505,6 +507,11 @@ export default function AdminPage() {
               </p>
             </div>
           )}
+        </TabsContent>
+
+        <TabsContent value="plan-builder">
+          <h2 className="text-xl font-semibold mb-4">Create Training Plan</h2>
+          <PlanBuilderForm />
         </TabsContent>
 
         <TabsContent value="testimonials">
