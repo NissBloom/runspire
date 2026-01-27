@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
-import { AlertCircle } from 'lucide-react'
+import { AlertCircle, Trash2 } from 'lucide-react'
 
 interface PlanOutputs {
   max_kms: number
@@ -129,38 +129,113 @@ export function PlanBuilderForm() {
     }
   }
 
+  const handleDeletePlan = async () => {
+    if (!planId) return
+    
+    if (!window.confirm('Are you sure you want to delete this plan? This action cannot be undone.')) {
+      return
+    }
+
+    setLoading(true)
+    setError('')
+    setErrorCode('')
+
+    try {
+      console.log("[v0] Deleting plan:", planId);
+      
+      const response = await fetch('/api/admin/delete-plan', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ planId })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        console.log("[v0] Delete API error response:", data);
+        setErrorCode(data.code || 'UNKNOWN_ERROR')
+        throw new Error(data.error || 'Failed to delete plan')
+      }
+
+      console.log("[v0] Plan deleted successfully:", data);
+      
+      // Reset the form to initial state
+      setSuccess(false)
+      setPlanId(null)
+      setOutputs(null)
+      setWeeks([])
+      setFormData({
+        plan_name: '',
+        race_date: '',
+        start_date: '',
+        number_of_runs_per_week: '5',
+        current_weekly_kms: '40',
+        most_recent_long_run: '10',
+        recent_injury: '',
+        goal_race: 'Marathon',
+        goal_date: '',
+        recent_race_effort: 'moderate',
+        max_hr: '180',
+        life_events: '',
+        training_weeks: '16',
+        starting_weekly_mileage: '40',
+        starting_long_run_distance: '10',
+        max_weekly_mileage: '80',
+        recovery_week_interval: '4',
+        recovery_factor: '0.7',
+        long_run_cap: '32',
+      })
+    } catch (err) {
+      console.log("[v0] Error deleting plan:", err);
+      setError(err instanceof Error ? err.message : 'Failed to delete plan')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   if (success && outputs && weeks.length > 0) {
     return (
       <div className="space-y-6">
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-center gap-3">
           <h3 className="text-lg font-semibold">Plan Generated Successfully</h3>
-          <Button variant="outline" onClick={() => {
-            setSuccess(false)
-            setPlanId(null)
-            setOutputs(null)
-            setWeeks([])
-            setFormData({
-              plan_name: '',
-              race_date: '',
-              start_date: '',
-              number_of_runs_per_week: '4',
-              current_weekly_kms: '40',
-              most_recent_long_run: '12',
-              recent_injury: '',
-              goal_race: 'Marathon',
-              goal_date: '',
-              recent_race_effort: 'moderate',
-              max_hr: '180',
-              life_events: '',
-              training_weeks: '16',
-              starting_weekly_mileage: '40',
-              starting_long_run_distance: '10',
-              max_weekly_mileage: '80',
-              recovery_week_interval: '4',
-              recovery_factor: '0.7',
-              long_run_cap: '32',
-            })
-          }}>Create New Plan</Button>
+          <div className="flex gap-2">
+            <Button 
+              variant="destructive" 
+              onClick={handleDeletePlan}
+              disabled={loading}
+              className="flex gap-2"
+            >
+              <Trash2 size={16} />
+              Delete Plan
+            </Button>
+            <Button variant="outline" onClick={() => {
+              setSuccess(false)
+              setPlanId(null)
+              setOutputs(null)
+              setWeeks([])
+              setFormData({
+                plan_name: '',
+                race_date: '',
+                start_date: '',
+                number_of_runs_per_week: '4',
+                current_weekly_kms: '40',
+                most_recent_long_run: '12',
+                recent_injury: '',
+                goal_race: 'Marathon',
+                goal_date: '',
+                recent_race_effort: 'moderate',
+                max_hr: '180',
+                life_events: '',
+                training_weeks: '16',
+                starting_weekly_mileage: '40',
+                starting_long_run_distance: '10',
+                max_weekly_mileage: '80',
+                recovery_week_interval: '4',
+                recovery_factor: '0.7',
+                long_run_cap: '32',
+              })
+            }}>Create New Plan</Button>
+          </div>
         </div>
 
         {/* Outputs Display */}
