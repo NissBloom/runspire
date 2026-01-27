@@ -16,6 +16,7 @@ export async function POST(req: Request) {
       most_recent_long_run,
       recent_injury,
       goal_race,
+      goal_date,
       recent_race_effort,
       max_hr,
       life_events,
