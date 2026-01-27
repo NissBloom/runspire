@@ -132,11 +132,23 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       success: true,
-      planId,
-      weeksFromNow,
-      trainingWeeks,
-      recoveryWeeks,
-      maxKms: Math.round(maxKms * 10) / 10
+      plan_id: planId,
+      outputs: {
+        max_kms: Math.round(maxKms * 10) / 10,
+        weeks_till_goal: weeksFromNow,
+        recovery_weeks: recoveryWeeks,
+        taper: taper
+      },
+      weeks: schedule.map(week => ({
+        week_number: week.week_number,
+        week_start_date: week.week_start_date,
+        week_total_mileage: week.week_total_mileage,
+        long_run_distance: week.long_run_distance,
+        interval_distance: week.interval_run_distance,
+        aerobic_distance: week.aerobic_distance,
+        extra_distance: week.extra_distance,
+        easy_distance: week.easy_distance
+      }))
     });
   } catch (error) {
     console.error('Error creating plan:', error);
