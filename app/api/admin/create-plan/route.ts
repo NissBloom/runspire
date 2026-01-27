@@ -78,7 +78,7 @@ export async function POST(req: Request) {
     // Create inputs record
     await sql`
       INSERT INTO training_plan_inputs (plan_id, number_of_runs_per_week, current_weekly_kms, most_recent_long_run, recent_injury, goal_race, goal_date, recent_race_effort, max_hr, life_events, created_at)
-      VALUES (${planId}, ${number_of_runs_per_week}, ${current_weekly_kms}, ${most_recent_long_run}, ${recent_injury}, ${goal_race}, ${race_date}, ${recent_race_effort}, ${max_hr}, ${life_events}, NOW())
+      VALUES (${planId}, ${number_of_runs_per_week}, ${current_weekly_kms}, ${most_recent_long_run}, ${recent_injury}, ${goal_race}, ${goal_date}, ${recent_race_effort}, ${max_hr}, ${life_events}, NOW())
     `;
 
     // Create outputs record
