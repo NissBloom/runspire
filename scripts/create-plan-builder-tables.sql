@@ -1,3 +1,21 @@
+-- Create training_plans table (parameters)
+CREATE TABLE IF NOT EXISTS training_plans (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  race_date DATE NOT NULL,
+  start_date DATE NOT NULL,
+  training_weeks INTEGER NOT NULL,
+  starting_weekly_mileage DECIMAL(10, 2) NOT NULL,
+  runs_per_week INTEGER NOT NULL,
+  starting_long_run_distance DECIMAL(10, 2) NOT NULL,
+  max_weekly_mileage DECIMAL(10, 2) NOT NULL,
+  recovery_week_interval INTEGER,
+  percentage_tiers JSONB,
+  recovery_factor DECIMAL(5, 2),
+  long_run_cap DECIMAL(10, 2),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Create training_plan_inputs table
 CREATE TABLE IF NOT EXISTS training_plan_inputs (
   id SERIAL PRIMARY KEY,
