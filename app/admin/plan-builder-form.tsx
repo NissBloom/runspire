@@ -29,6 +29,7 @@ interface PlanWeek {
 export function PlanBuilderForm() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [errorCode, setErrorCode] = useState('')
   const [success, setSuccess] = useState(false)
   const [outputs, setOutputs] = useState<PlanOutputs | null>(null)
   const [weeks, setWeeks] = useState<PlanWeek[]>([])
@@ -73,6 +74,7 @@ export function PlanBuilderForm() {
     e.preventDefault()
     setLoading(true)
     setError('')
+    setErrorCode('')
     setSuccess(false)
 
     try {
@@ -85,14 +87,18 @@ export function PlanBuilderForm() {
       const data = await response.json()
 
       if (!response.ok) {
+        console.log("[v0] API error response:", data);
+        setErrorCode(data.code || 'UNKNOWN_ERROR')
         throw new Error(data.error || 'Failed to create plan')
       }
 
+      console.log("[v0] Plan created successfully:", data);
       setPlanId(data.plan_id)
       setOutputs(data.outputs)
       setWeeks(data.weeks)
       setSuccess(true)
     } catch (err) {
+      console.log("[v0] Error in handleSubmit:", err);
       setError(err instanceof Error ? err.message : 'An error occurred')
     } finally {
       setLoading(false)
@@ -203,7 +209,10 @@ export function PlanBuilderForm() {
       {error && (
         <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex gap-3">
           <AlertCircle className="text-red-600 mt-0.5" size={20} />
-          <p className="text-red-700">{error}</p>
+          <div>
+            <p className="text-red-700 font-semibold">{error}</p>
+            {errorCode && <p className="text-red-600 text-sm mt-1">Error Code: {errorCode}</p>}
+          </div>
         </div>
       )}
 

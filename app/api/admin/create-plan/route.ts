@@ -5,6 +5,8 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     
+    console.log("[v0] Plan creation request received with body:", JSON.stringify(body, null, 2));
+    
     const {
       name,
       race_date,
@@ -24,6 +26,25 @@ export async function POST(req: Request) {
       long_run_cap,
       percentage_tiers
     } = body;
+    
+    // Validate required fields
+    const requiredFields = [
+      'name', 'race_date', 'start_date', 'number_of_runs_per_week',
+      'current_weekly_kms', 'starting_long_run_distance', 'max_weekly_mileage'
+    ];
+    
+    const missingFields = requiredFields.filter(field => !body[field]);
+    if (missingFields.length > 0) {
+      console.log("[v0] Missing required fields:", missingFields);
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: `Missing required fields: ${missingFields.join(', ')}`,
+          code: 'MISSING_FIELDS'
+        },
+        { status: 400 }
+      );
+    }
 
     // Calculate derived outputs
     const raceDate = new Date(race_date);
@@ -151,8 +172,41 @@ export async function POST(req: Request) {
       }))
     });
   } catch (error) {
-    console.error('Error creating plan:', error);
-    return NextResponse.json({ error: 'Failed to create plan' }, { status: 500 });
+    console.error('[v0] Error creating plan:', error);
+    
+    // Extract detailed error information
+    let errorMessage = 'Failed to create plan';
+    let errorCode = 'UNKNOWN_ERROR';
+    
+    if (error instanceof Error) {
+      errorMessage = error.message;
+      
+      // Parse database error codes
+      if (error.message.includes('column') && error.message.includes('does not exist')) {
+        errorCode = 'COLUMN_MISSING';
+        errorMessage = `Database schema error: ${error.message}. Please contact administrator.`;
+      } else if (error.message.includes('relation') && error.message.includes('does not exist')) {
+        errorCode = 'TABLE_MISSING';
+        errorMessage = `Database table missing: ${error.message}. Please contact administrator.`;
+      } else if (error.message.includes('unique violation')) {
+        errorCode = 'DUPLICATE_ENTRY';
+        errorMessage = 'This plan name already exists. Please use a different name.';
+      } else if (error.message.includes('foreign key')) {
+        errorCode = 'FOREIGN_KEY_ERROR';
+        errorMessage = 'Related data not found. Please ensure all required fields are filled.';
+      }
+    }
+    
+    console.log("[v0] Returning error response:", { errorCode, errorMessage });
+    
+    return NextResponse.json(
+      { 
+        success: false,
+        error: errorMessage,
+        code: errorCode
+      }, 
+      { status: 500 }
+    );
   }
 }
 
