@@ -14,7 +14,13 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
       try {
         const response = await fetch("/api/currency");
         const data = await response.json();
-        setCurrency(data);
+        // Map API response fields to Currency type
+        setCurrency({
+          code: data.currencyCode || "ILS",
+          symbol: data.currencySymbol || "₪",
+          rate: data.rate || 1,
+          countryCode: data.countryCode || "IL",
+        });
       } catch (error) {
         console.error("[v0] Failed to fetch currency:", error);
         // Default to ILS if fetch fails
