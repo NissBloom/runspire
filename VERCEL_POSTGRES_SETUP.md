@@ -12,5 +12,5 @@ This guide will help you set up Vercel Postgres as the database for the Run Coac
 
 ## 2. Install Required Package
 
-\`\`\`bash
+```bash
 npm install @vercel/postgres

@@ -3,10 +3,8 @@
 import { sql } from "@vercel/postgres"
 import { revalidatePath } from "next/cache"
 import { createTestimonialsTable, createTraineesTable } from "@/lib/db"
-import { sendEmail, generateTestimonialSubmittedEmail, generateAdminTestimonialNotification } from "@/lib/email"
 
 const IS_PROD = process.env.NODE_ENV === "production"
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "admin@runspire.com"
 
 export interface Testimonial {
   id: number
@@ -158,31 +156,6 @@ export async function submitTestimonial(formData: FormData) {
       INSERT INTO testimonials (user_id, achievement, comment, rating, status, created_at)
       VALUES (${userId}, ${achievement}, ${comment}, ${rating}, 'pending', NOW())
     `
-
-    // Send confirmation email to user
-    await sendEmail({
-      to: email,
-      subject: "Testimonial Submitted - Runspire",
-      html: generateTestimonialSubmittedEmail({
-        firstName,
-        lastName,
-        email,
-      }),
-    })
-
-    // Send notification email to admin
-    await sendEmail({
-      to: ADMIN_EMAIL,
-      subject: "New Testimonial Submitted",
-      html: generateAdminTestimonialNotification({
-        firstName,
-        lastName,
-        email,
-        achievement,
-        comment,
-        rating,
-      }),
-    })
 
     revalidatePath("/testimonials")
     revalidatePath("/admin")
