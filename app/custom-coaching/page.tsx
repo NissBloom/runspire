@@ -126,7 +126,7 @@ export default function CustomCoachingPage() {
                 >
                   <div className="flex justify-between items-center mb-2">
                     <h4 className="font-bold text-green-700">🟢 Base Package</h4>
-                    <span className="font-bold">₪200/month</span>
+                    <span className="font-bold">₪350/month</span>
                   </div>
                   <p className="text-sm text-gray-600 mb-2">
                     Perfect for runners who want structure without heavy check-ins
@@ -148,7 +148,7 @@ export default function CustomCoachingPage() {
                 >
                   <div className="flex justify-between items-center mb-2">
                     <h4 className="font-bold text-blue-700">🔵 Performance Package</h4>
-                    <span className="font-bold">₪350/month</span>
+                    <span className="font-bold">₪550/month</span>
                   </div>
                   <p className="text-sm text-gray-600 mb-2">
                     Ideal for runners who want close guidance and accountability
@@ -226,8 +226,8 @@ export default function CustomCoachingPage() {
                           <SelectValue placeholder="Select a package" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="base">Base Package (₪200/month)</SelectItem>
-                          <SelectItem value="performance">Performance Package (₪350/month)</SelectItem>
+                          <SelectItem value="base">Base Package (₪350/month)</SelectItem>
+                          <SelectItem value="performance">Performance Package (₪550/month)</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
