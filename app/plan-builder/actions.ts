@@ -3,16 +3,6 @@
 import { sql } from "@vercel/postgres"
 import { revalidatePath } from "next/cache"
 import { createOrGetUser, createTraineesTable, createTrainingPlansTable } from "@/lib/db"
-import {
-  sendEmail,
-  generateTrainingPlanInitialEmail,
-  generateTrainingPlanCompleteEmail,
-  generateAdminTrainingPlanInitialNotification,
-  generateAdminTrainingPlanCompleteNotification,
-  generateAdminCtaClickNotification,
-} from "@/lib/email"
-
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "admin@runspire.com"
 
 export async function saveTrainingPlan(formData: FormData) {
   try {
@@ -93,42 +83,6 @@ export async function saveTrainingPlan(formData: FormData) {
     const planId = result.rows[0].id
 
     console.log("Successfully saved training plan with ID:", planId, "for user:", userResult.userId)
-
-    // Send confirmation email to user
-    await sendEmail({
-      to: email,
-      subject: "Your Training Plan is Complete - Runspire",
-      html: generateTrainingPlanCompleteEmail({
-        firstName,
-        lastName,
-        email,
-        goal,
-        experience,
-        daysPerWeek,
-        currentMileage,
-        raceDistance: raceDistance || undefined,
-        personalBest: personalBest || undefined,
-        bundle,
-      }),
-    })
-
-    // Send notification email to admin
-    await sendEmail({
-      to: ADMIN_EMAIL,
-      subject: "New Training Plan Completed",
-      html: generateAdminTrainingPlanCompleteNotification({
-        firstName,
-        lastName,
-        email,
-        goal,
-        experience,
-        daysPerWeek,
-        currentMileage,
-        raceDistance: raceDistance || undefined,
-        personalBest: personalBest || undefined,
-        bundle,
-      }),
-    })
 
     // Revalidate the page to show fresh data
     revalidatePath("/plan-builder")
@@ -281,28 +235,6 @@ export async function saveInitialPlanData(formData: FormData) {
 
     console.log("Successfully saved initial training plan data with ID:", planId, "for user:", userResult.userId)
 
-    // Send confirmation email to user
-    await sendEmail({
-      to: trimmedEmail,
-      subject: "Training Plan Started - Runspire",
-      html: generateTrainingPlanInitialEmail({
-        firstName: trimmedFirstName,
-        lastName: trimmedLastName,
-        email: trimmedEmail,
-      }),
-    })
-
-    // Send notification email to admin
-    await sendEmail({
-      to: ADMIN_EMAIL,
-      subject: "Training Plan Started",
-      html: generateAdminTrainingPlanInitialNotification({
-        firstName: trimmedFirstName,
-        lastName: trimmedLastName,
-        email: trimmedEmail,
-      }),
-    })
-
     return {
       success: true,
       planId: planId.toString(),
@@ -319,30 +251,6 @@ export async function saveInitialPlanData(formData: FormData) {
 // Action to update CTA when user clicks a button
 export async function updatePlanCta(planId: string, cta: string) {
   try {
-    // First, fetch the training plan and user data
-    const planResult = await sql`
-      SELECT 
-        tp.goal,
-        tp.user_id,
-        t.first_name,
-        t.last_name,
-        t.email
-      FROM training_plans tp
-      JOIN trainees t ON tp.user_id = t.id
-      WHERE tp.id = ${planId}
-    `
-
-    if (planResult.rows.length === 0) {
-      console.error("Training plan not found for ID:", planId)
-      return {
-        success: false,
-        message: "Training plan not found",
-      }
-    }
-
-    const planData = planResult.rows[0]
-
-    // Update the CTA in database
     await sql`
       UPDATE training_plans 
       SET cta = ${cta}
@@ -351,21 +259,6 @@ export async function updatePlanCta(planId: string, cta: string) {
 
     console.log("Successfully updated CTA for plan ID:", planId, "with CTA:", cta)
 
-    // Send admin notification email
-    const adminEmailHtml = generateAdminCtaClickNotification({
-      firstName: planData.first_name,
-      lastName: planData.last_name,
-      email: planData.email,
-      ctaClicked: cta,
-      goal: planData.goal,
-    })
-
-    await sendEmail({
-      to: ADMIN_EMAIL,
-      subject: `CTA Action Taken - ${planData.first_name} ${planData.last_name}`,
-      html: adminEmailHtml,
-    })
-
     return {
       success: true,
     }
@@ -373,7 +266,6 @@ export async function updatePlanCta(planId: string, cta: string) {
     console.error("Error updating plan CTA:", error)
     return {
       success: false,
-      message: "Failed to update CTA",
     }
   }
 }
