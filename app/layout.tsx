@@ -3,6 +3,7 @@ import "./globals.css"
 import { Nunito } from "next/font/google"
 import { Header } from "@/components/header"
 import { TestimonialsProvider } from "./providers/testimonials-provider"
+import { CurrencyProvider } from "./providers/currency-provider"
 import { FloatingCalendlyButton } from "@/components/floating-calendly-button"
 import { AnalyticsProvider } from "@/components/analytics-provider"
 import { SpeedInsights } from "@vercel/speed-insights/next"
@@ -31,13 +32,15 @@ export default function RootLayout({
       <body className={`${nunito.variable} font-display`}>
         <Suspense fallback={null}>
           <AnalyticsProvider>
-            <TestimonialsProvider>
-              <Header />
-              {children}
-              <FloatingCalendlyButton />
-              <SpeedInsights />
-              <Analytics />
-            </TestimonialsProvider>
+            <CurrencyProvider>
+              <TestimonialsProvider>
+                <Header />
+                {children}
+                <FloatingCalendlyButton />
+                <SpeedInsights />
+                <Analytics />
+              </TestimonialsProvider>
+            </CurrencyProvider>
           </AnalyticsProvider>
         </Suspense>
       </body>
