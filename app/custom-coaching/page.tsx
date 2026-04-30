@@ -9,8 +9,11 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ChevronLeft, CheckCircle2, BookOpen, CalendarIcon } from "lucide-react"
 import { submitCoachingRequest } from "./actions"
+import { useCurrency } from "@/app/providers/currency-provider"
+import { formatPrice } from "@/lib/currency"
 
 export default function CustomCoachingPage() {
+  const currency = useCurrency()
   const [submitted, setSubmitted] = useState(false)
   const [formData, setFormData] = useState({
     firstName: "",
@@ -125,7 +128,7 @@ export default function CustomCoachingPage() {
                 >
                   <div className="flex justify-between items-center mb-2">
                     <h4 className="font-bold text-green-700">🟢 Base Package</h4>
-                    <span className="font-bold">₪350/month</span>
+                    <span className="font-bold">{formatPrice(350, currency.rate, currency.code, currency.symbol)}/month</span>
                   </div>
                   <p className="text-sm text-gray-600 mb-2">
                     Perfect for runners who want structure without heavy check-ins
@@ -147,7 +150,7 @@ export default function CustomCoachingPage() {
                 >
                   <div className="flex justify-between items-center mb-2">
                     <h4 className="font-bold text-blue-700">🔵 Performance Package</h4>
-                    <span className="font-bold">₪550/month</span>
+                    <span className="font-bold">{formatPrice(550, currency.rate, currency.code, currency.symbol)}/month</span>
                   </div>
                   <p className="text-sm text-gray-600 mb-2">
                     Ideal for runners who want close guidance and accountability
@@ -225,8 +228,8 @@ export default function CustomCoachingPage() {
                           <SelectValue placeholder="Select a package" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="base">Base Package (₪350/month)</SelectItem>
-                          <SelectItem value="performance">Performance Package (₪550/month)</SelectItem>
+                          <SelectItem value="base">Base Package ({formatPrice(350, currency.rate, currency.code, currency.symbol)}/month)</SelectItem>
+                          <SelectItem value="performance">Performance Package ({formatPrice(550, currency.rate, currency.code, currency.symbol)}/month)</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>

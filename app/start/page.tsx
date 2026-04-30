@@ -13,9 +13,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ChevronLeft, Calendar, MessageCircle, Info } from "lucide-react"
 import { saveInitialPlanData, updatePlanCta } from "@/app/plan-builder/actions"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import { useCurrency } from "@/app/providers/currency-provider"
+import { formatPrice } from "@/lib/currency"
 
 export default function GetStartedPage() {
   const router = useRouter()
+  const currency = useCurrency()
   const [step, setStep] = useState(1)
   const [planId, setPlanId] = useState("")
   const [showPackageDialog, setShowPackageDialog] = useState(false)
@@ -352,7 +355,7 @@ export default function GetStartedPage() {
                     <div className="rounded-lg border-2 border-green-500 bg-green-50 p-6">
                       <div className="flex justify-between items-center mb-3">
                         <h4 className="text-xl font-bold text-green-700">🟢 Base Package</h4>
-                        <span className="text-xl font-bold">₪350/month</span>
+                        <span className="text-xl font-bold">{formatPrice(350, currency.rate, currency.code, currency.symbol)}/month</span>
                       </div>
                       <p className="text-gray-600 mb-4">
                         Perfect for runners who want structure without heavy check-ins
@@ -371,7 +374,7 @@ export default function GetStartedPage() {
                     <div className="rounded-lg border-2 border-blue-500 bg-blue-50 p-6">
                       <div className="flex justify-between items-center mb-3">
                         <h4 className="text-xl font-bold text-blue-700">🔵 Performance Package</h4>
-                        <span className="text-xl font-bold">₪550/month</span>
+                        <span className="text-xl font-bold">{formatPrice(550, currency.rate, currency.code, currency.symbol)}/month</span>
                       </div>
                       <p className="text-gray-600 mb-4">Ideal for runners who want close guidance and accountability</p>
                       <Button
@@ -447,12 +450,12 @@ export default function GetStartedPage() {
               {selectedPackageForDetails === "base" ? (
                 <>
                   <span className="text-green-700">🟢 Base Package</span>
-                  <span className="text-xl font-bold">₪350/month</span>
+                  <span className="text-xl font-bold">{formatPrice(350, currency.rate, currency.code, currency.symbol)}/month</span>
                 </>
               ) : (
                 <>
                   <span className="text-blue-700">🔵 Performance Package</span>
-                  <span className="text-xl font-bold">₪550/month</span>
+                  <span className="text-xl font-bold">{formatPrice(550, currency.rate, currency.code, currency.symbol)}/month</span>
                 </>
               )}
             </DialogTitle>
